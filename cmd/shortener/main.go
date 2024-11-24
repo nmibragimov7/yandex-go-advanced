@@ -2,63 +2,72 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
 )
 
-// User — пользователь в системе.
-//type User struct {
-//	FirstName string
-//	LastName  string
-//}
+// Abs возвращает абсолютное значение.
+// Например: 3.1 => 3.1, -3.14 => 3.14, -0 => 0.
+func Abs(value float64) float64 {
+	return math.Abs(value)
+}
+
+// Client — пользователь в системе.
+type Client struct {
+	FirstName string
+	LastName  string
+}
 
 // FullName возвращает имя и фамилию пользователя.
-//func (u User) FullName() string {
-//	return u.FirstName + " " + u.LastName
-//}
+func (u Client) FullName() string {
+	return u.FirstName + " " + u.LastName
+}
 
 // Relationship определяет положение в семье.
-//type Relationship string
-
-// Возможные роли в семье.
-//const (
-//	Father      = Relationship("father")
-//	Mother      = Relationship("mother")
-//	Child       = Relationship("child")
-//	GrandMother = Relationship("grandMother")
-//	GrandFather = Relationship("grandFather")
-//)
-
-// Family описывает семью.
-//type Family struct {
-//	Members map[Relationship]Person
-//}
+type Relationship string
 
 // Person описывает конкретного человека в семье.
-//type Person struct {
-//	FirstName string
-//	LastName  string
-//	Age       int
-//}
+type Person struct {
+	FirstName string
+	LastName  string
+	Age       int
+}
 
-//var (
-//	// ErrRelationshipAlreadyExists возвращает ошибку, если роль уже занята.
-//	ErrRelationshipAlreadyExists = errors.New("relationship already exists")
-//)
+// Возможные роли в семье.
+const (
+	Father      = Relationship("father")
+	Mother      = Relationship("mother")
+	Child       = Relationship("child")
+	GrandMother = Relationship("grandMother")
+	GrandFather = Relationship("grandFather")
+)
+
+// Family описывает семью.
+type Family struct {
+	Members map[Relationship]Person
+}
+
+var (
+	// ErrRelationshipAlreadyExists возвращает ошибку, если роль уже занята.
+	ErrRelationshipAlreadyExists = errors.New("relationship already exists")
+)
 
 // AddNew добавляет нового члена семьи.
 // Если в семье ещё нет людей, создаётся пустая мапа.
 // Если роль уже занята, метод выдаёт ошибку.
-//func (f *Family) AddNew(r Relationship, p Person) error {
-//	if f.Members == nil {
-//		f.Members = map[Relationship]Person{}
-//	}
-//	if _, ok := f.Members[r]; ok {
-//		return ErrRelationshipAlreadyExists
-//	}
-//	f.Members[r] = p
-//	return nil
-//}
+func (f *Family) AddNew(r Relationship, p Person) error {
+	if f.Members == nil {
+		f.Members = map[Relationship]Person{}
+	}
+	if _, ok := f.Members[r]; ok {
+		return ErrRelationshipAlreadyExists
+	}
+	f.Members[r] = p
+	return nil
+}
 
 // User — основной объект для теста.
 type User struct {
@@ -103,33 +112,32 @@ func UserViewHandler(users map[string]User) http.HandlerFunc {
 }
 
 func main() {
-	// 1 fragment
-	//v := Abs(3)
-	//fmt.Println(v)
-
+	// 1 task
 	// 2 fragment
-	//u := User{
-	//	FirstName: "Misha",
-	//	LastName:  "Popov",
-	//}
-	//fmt.Println(u.FullName())
-
+	v := Abs(3)
+	fmt.Println(v)
+	// 2 fragment
+	u := Client{
+		FirstName: "Misha",
+		LastName:  "Popov",
+	}
+	fmt.Println(u.FullName())
 	// 3 fragment
-	//f := Family{}
-	//err := f.AddNew(Father, Person{
-	//	FirstName: "Misha",
-	//	LastName:  "Popov",
-	//	Age:       56,
-	//})
-	//fmt.Println(f, err)
+	f := Family{}
+	err := f.AddNew(Father, Person{
+		FirstName: "Misha",
+		LastName:  "Popov",
+		Age:       56,
+	})
+	fmt.Println(f, err)
+	err = f.AddNew(Father, Person{
+		FirstName: "Drug",
+		LastName:  "Mishi",
+		Age:       57,
+	})
+	fmt.Println(f, err)
 
-	//err = f.AddNew(Father, Person{
-	//	FirstName: "Drug",
-	//	LastName:  "Mishi",
-	//	Age:       57,
-	//})
-	//fmt.Println(f, err)
-
+	// 4 task
 	users := make(map[string]User)
 	u1 := User{
 		ID:        "u1",
@@ -147,9 +155,3 @@ func main() {
 	http.HandleFunc("/users", UserViewHandler(users))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
-
-// Abs возвращает абсолютное значение.
-// Например: 3.1 => 3.1, -3.14 => 3.14, -0 => 0.
-//func Abs(value float64) float64 {
-//	return math.Abs(value)
-//}
