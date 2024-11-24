@@ -9,6 +9,27 @@ import (
 	"net/http"
 )
 
+func mainPage(res http.ResponseWriter, req *http.Request) {
+	body := fmt.Sprintf("Method: %s\r\n", req.Method)
+	body += "Header ===============\r\n"
+	for k, v := range req.Header {
+		body += fmt.Sprintf("%s: %v\r\n", k, v)
+	}
+	body += "Query parameters ===============\r\n"
+	if err := req.ParseForm(); err != nil {
+		res.Write([]byte(err.Error()))
+		return
+	}
+	for k, v := range req.Form {
+		body += fmt.Sprintf("%s: %v\r\n", k, v)
+	}
+	res.Write([]byte(body))
+}
+
+func apiPage(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("Это страница /api."))
+}
+
 // Abs возвращает абсолютное значение.
 // Например: 3.1 => 3.1, -3.14 => 3.14, -0 => 0.
 func Abs(value float64) float64 {
@@ -74,6 +95,13 @@ type User struct {
 	ID        string
 	FirstName string
 	LastName  string
+}
+
+func StatusHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	// намеренно добавлена ошибка в JSON
+	rw.Write([]byte(`{"status":"ok}`))
 }
 
 // UserViewHandler — хендлер, который нужно протестировать.
@@ -152,6 +180,11 @@ func main() {
 	users["u1"] = u1
 	users["u2"] = u2
 
-	http.HandleFunc("/users", UserViewHandler(users))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	mux := http.NewServeMux()
+	mux.HandleFunc(`/api/`, apiPage)
+	mux.HandleFunc(`/status`, StatusHandler)
+	mux.HandleFunc(`/users`, UserViewHandler(users))
+	mux.HandleFunc(`/`, mainPage)
+
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }

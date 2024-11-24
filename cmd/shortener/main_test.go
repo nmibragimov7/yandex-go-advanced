@@ -173,7 +173,7 @@ func TestUserViewHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, test.url, nil)
+			request := httptest.NewRequest(http.MethodPost, test.url, nil)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			handler := UserViewHandler(users)
