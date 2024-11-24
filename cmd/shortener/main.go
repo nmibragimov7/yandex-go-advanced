@@ -9,21 +9,22 @@ import (
 	"net/http"
 )
 
-func mainPage(res http.ResponseWriter, req *http.Request) {
-	body := fmt.Sprintf("Method: %s\r\n", req.Method)
+func mainPage(rw http.ResponseWriter, r *http.Request) {
+	body := fmt.Sprintf("Method: %s\r\n", r.Method)
 	body += "Header ===============\r\n"
-	for k, v := range req.Header {
+	for k, v := range r.Header {
 		body += fmt.Sprintf("%s: %v\r\n", k, v)
 	}
 	body += "Query parameters ===============\r\n"
-	if err := req.ParseForm(); err != nil {
-		res.Write([]byte(err.Error()))
+	if err := r.ParseForm(); err != nil {
+		rw.Write([]byte(err.Error()))
 		return
 	}
-	for k, v := range req.Form {
+	for k, v := range r.Form {
 		body += fmt.Sprintf("%s: %v\r\n", k, v)
 	}
-	res.Write([]byte(body))
+	rw.WriteHeader(http.StatusCreated)
+	rw.Write([]byte(body))
 }
 
 func apiPage(res http.ResponseWriter, req *http.Request) {
