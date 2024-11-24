@@ -24,7 +24,7 @@ func getKey() string {
 }
 
 func mainPage(rw http.ResponseWriter, r *http.Request) {
-	baseUrl := "http://localhost:8080/"
+	baseURL := "http://localhost:8080/"
 
 	if r.Method != http.MethodPost {
 		http.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -51,9 +51,9 @@ func mainPage(rw http.ResponseWriter, r *http.Request) {
 	mtx.Unlock()
 
 	rw.Header().Set("Content-Type", "text/plain")
-	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(baseUrl+key)))
+	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(baseURL+key)))
 	rw.WriteHeader(http.StatusCreated)
-	rw.Write([]byte(baseUrl + key))
+	rw.Write([]byte(baseURL + key))
 }
 
 func idPage(rw http.ResponseWriter, r *http.Request) {
