@@ -31,10 +31,10 @@ func mainPage(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-Type") != "text/plain" {
-		http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
-		return
-	}
+	//if r.Header.Get("Content-Type") != "text/plain" {
+	//	http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
+	//	return
+	//}
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -62,10 +62,10 @@ func idPage(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-Type") != "text/plain" {
-		http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
-		return
-	}
+	//if r.Header.Get("Content-Type") != "text/plain" {
+	//	http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
+	//	return
+	//}
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
 	fmt.Println("path", path)
