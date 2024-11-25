@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 )
 
@@ -27,7 +29,7 @@ func TestMainPage(t *testing.T) {
 		want   want
 	}{
 		{
-			name:   "positive test #1",
+			name:   "positive main page test #1",
 			method: http.MethodPost,
 			path:   "/",
 			body:   "https://practicum.yandex.ru/",
@@ -39,7 +41,7 @@ func TestMainPage(t *testing.T) {
 			},
 		},
 		{
-			name:   "negative test #2",
+			name:   "negative main page test #2",
 			method: http.MethodGet,
 			path:   "/",
 			body:   "https://practicum.yandex.ru/",
@@ -50,6 +52,9 @@ func TestMainPage(t *testing.T) {
 			},
 		},
 	}
+
+	config.Init()
+	flag.Parse()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -83,14 +88,14 @@ func TestIdPage(t *testing.T) {
 		want   want
 	}{
 		{
-			name:   "positive test #1",
+			name:   "positive id page test #1",
 			method: http.MethodGet,
 			want: want{
 				code: 307,
 			},
 		},
 		{
-			name:   "negative test #2",
+			name:   "negative id page test #2",
 			method: http.MethodPost,
 			want: want{
 				code:        405,
