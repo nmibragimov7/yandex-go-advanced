@@ -1,186 +1,125 @@
 package main
 
-//func TestAbs(t *testing.T) {
-//	tests := []struct {
-//		name   string
-//		values float64
-//		want   float64
-//	}{
-//		{
-//			name:   "-3 to 3",
-//			values: -3,
-//			want:   3,
-//		},
-//		{
-//			name:   "-2.000001 to 2.000001",
-//			values: -2.000001,
-//			want:   2.000001,
-//		},
-//		{
-//			name:   "-0.000000003 to 0.000000003",
-//			values: -0.000000003,
-//			want:   0.000000003,
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			assert.Equal(t, test.want, Abs(test.values))
-//			//if res := Abs(test.values); res != test.want {
-//			//	t.Errorf("Abs() = %f, want %f", res, test.want)
-//			//}
-//		})
-//	}
-//}
-//
-//func TestUser_FullName(t *testing.T) {
-//	tests := []struct {
-//		name   string
-//		values Client
-//		want   string
-//	}{
-//		{
-//			name: "1 test",
-//			values: Client{
-//				FirstName: "Nurlan",
-//				LastName:  "Ibragimov",
-//			},
-//			want: "Nurlan Ibragimov",
-//		},
-//		{
-//			name: "2 test",
-//			values: Client{
-//				FirstName: "Petr",
-//				LastName:  "Petrov",
-//			},
-//			want: "Petr Petrov",
-//		},
-//	}
-//
-//	for _, test := range tests { // цикл по всем тестам
-//		t.Run(test.name, func(t *testing.T) {
-//			assert.Equal(t, test.want, test.values.FullName())
-//			//if res := test.values.FullName(); res != test.want {
-//			//	t.Errorf("user.FullName() = %s, want %s", res, test.want)
-//			//}
-//		})
-//	}
-//}
-//
-//func TestFamily_AddNew(t *testing.T) {
-//	f := Family{}
-//
-//	tests := []struct {
-//		name         string
-//		relationship Relationship
-//		values       Person
-//		want         bool
-//	}{
-//		{
-//			name:         "add father",
-//			relationship: Father,
-//			values: Person{
-//				FirstName: "Nurlan",
-//				LastName:  "Ibragimov",
-//				Age:       31,
-//			},
-//			want: false,
-//		},
-//		{
-//			name:         "double add father",
-//			relationship: Father,
-//			values: Person{
-//				FirstName: "Petr",
-//				LastName:  "Petrov",
-//				Age:       31,
-//			},
-//			want: true,
-//		},
-//	}
-//
-//	for _, test := range tests { // цикл по всем тестам
-//		t.Run(test.name, func(t *testing.T) {
-//			assert.Equal(t, test.want, f.AddNew(test.relationship, test.values) != nil)
-//			//if res := f.AddNew(test.relationship, test.values); (res != nil) != test.want {
-//			//	t.Errorf("f.AddNew() = %s, want %t", res, test.want)
-//			//}
-//		})
-//	}
-//}
-//
-//func TestUserViewHandler(t *testing.T) {
-//	type want struct {
-//		code        int
-//		response    string
-//		contentType string
-//	}
-//	tests := []struct {
-//		name string
-//		url  string
-//		want want
-//	}{
-//		{
-//			name: "negative test #1",
-//			url:  "/users",
-//			want: want{
-//				code:        400,
-//				response:    `{"message": "user_id is empty"}`,
-//				contentType: "application/json",
-//			},
-//		},
-//		{
-//			name: "negative test #2",
-//			url:  "/users?user_id=u3",
-//			want: want{
-//				code:        404,
-//				response:    `{"message": "user not found"}`,
-//				contentType: "application/json",
-//			},
-//		},
-//		{
-//			name: "positive test #3",
-//			url:  "/users?user_id=u1",
-//			want: want{
-//				code:        200,
-//				response:    `{"ID":"u1","FirstName":"Misha","LastName":"Popov"}`,
-//				contentType: "application/json",
-//			},
-//		},
-//	}
-//
-//	users := make(map[string]User)
-//	u1 := User{
-//		ID:        "u1",
-//		FirstName: "Misha",
-//		LastName:  "Popov",
-//	}
-//	u2 := User{
-//		ID:        "u2",
-//		FirstName: "Sasha",
-//		LastName:  "Popov",
-//	}
-//	users["u1"] = u1
-//	users["u2"] = u2
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			request := httptest.NewRequest(http.MethodPost, test.url, nil)
-//			// создаём новый Recorder
-//			w := httptest.NewRecorder()
-//			handler := UserViewHandler(users)
-//			handler.ServeHTTP(w, request)
-//
-//			res := w.Result()
-//			// проверяем код ответа
-//			assert.Equal(t, test.want.code, res.StatusCode)
-//
-//			// получаем и проверяем тело запроса
-//			defer res.Body.Close()
-//			resBody, err := io.ReadAll(res.Body)
-//
-//			require.NoError(t, err)
-//			assert.JSONEq(t, test.want.response, string(resBody))
-//			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-//		})
-//	}
-//}
+import (
+	"bytes"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+)
+
+func TestMainPage(t *testing.T) {
+	type want struct {
+		code          int
+		contentType   string
+		contentLength string
+		response      string
+	}
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+		want   want
+	}{
+		{
+			name:   "positive test #1",
+			method: http.MethodPost,
+			path:   "/",
+			body:   "https://practicum.yandex.ru/",
+			want: want{
+				code:          201,
+				contentType:   "text/plain",
+				contentLength: "30",
+				response:      "http://localhost:8080/",
+			},
+		},
+		{
+			name:   "negative test #2",
+			method: http.MethodGet,
+			path:   "/",
+			body:   "https://practicum.yandex.ru/",
+			want: want{
+				code:        405,
+				contentType: "text/plain; charset=utf-8",
+				response:    "Method Not Allowed",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(test.method, test.path, bytes.NewBuffer([]byte(test.body)))
+			w := httptest.NewRecorder()
+			MainPage(w, request)
+
+			res := w.Result()
+			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			assert.Equal(t, test.want.contentLength, res.Header.Get("Content-Length"))
+
+			resBody, err := io.ReadAll(res.Body)
+			defer res.Body.Close()
+
+			require.NoError(t, err)
+			assert.Contains(t, string(resBody), test.want.response)
+		})
+	}
+}
+
+func TestIdPage(t *testing.T) {
+	type want struct {
+		code        int
+		contentType string
+	}
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		want   want
+	}{
+		{
+			name:   "positive test #1",
+			method: http.MethodGet,
+			want: want{
+				code: 307,
+			},
+		},
+		{
+			name:   "negative test #2",
+			method: http.MethodPost,
+			want: want{
+				code:        405,
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
+			w := httptest.NewRecorder()
+			MainPage(w, request)
+
+			res := w.Result()
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+			defer res.Body.Close()
+
+			parsedURL, err := url.Parse(string(resBody))
+			require.NoError(t, err)
+
+			request = httptest.NewRequest(test.method, parsedURL.Path, nil)
+			w = httptest.NewRecorder()
+			IdPage(w, request)
+
+			res = w.Result()
+
+			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+		})
+	}
+}

@@ -23,18 +23,13 @@ func getKey() string {
 	return base64.URLEncoding.EncodeToString(b)[:8]
 }
 
-func mainPage(rw http.ResponseWriter, r *http.Request) {
+func MainPage(rw http.ResponseWriter, r *http.Request) {
 	baseURL := "http://localhost:8080/"
 
 	if r.Method != http.MethodPost {
 		http.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	//if r.Header.Get("Content-Type") != "text/plain" {
-	//	http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
-	//	return
-	//}
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -56,19 +51,13 @@ func mainPage(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(baseURL + key))
 }
 
-func idPage(rw http.ResponseWriter, r *http.Request) {
+func IdPage(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	//if r.Header.Get("Content-Type") != "text/plain" {
-	//	http.Error(rw, "Unsupported Media Type", http.StatusUnsupportedMediaType)
-	//	return
-	//}
-
 	path := strings.TrimPrefix(r.URL.Path, "/")
-	fmt.Println("path", path)
 	if path == "" {
 		http.Error(rw, "Not Found", http.StatusNotFound)
 		return
@@ -85,8 +74,8 @@ func idPage(rw http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/{id}`, idPage)
-	mux.HandleFunc(`/`, mainPage)
+	mux.HandleFunc(`/{id}`, IdPage)
+	mux.HandleFunc(`/`, MainPage)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
