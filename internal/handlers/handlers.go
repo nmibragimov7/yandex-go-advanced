@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/util"
 )
 
@@ -13,8 +14,6 @@ var store = make(map[string]string)
 var mtx sync.Mutex
 
 func MainPage(rw http.ResponseWriter, r *http.Request) {
-	baseURL := "http://localhost:8080/"
-
 	if r.Method != http.MethodPost {
 		http.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -35,9 +34,9 @@ func MainPage(rw http.ResponseWriter, r *http.Request) {
 	mtx.Unlock()
 
 	rw.Header().Set("Content-Type", "text/plain")
-	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(baseURL+key)))
+	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(*config.BaseURL+key)))
 	rw.WriteHeader(http.StatusCreated)
-	rw.Write([]byte(baseURL + key))
+	rw.Write([]byte(*config.BaseURL + key))
 }
 
 func IDPage(rw http.ResponseWriter, r *http.Request) {
