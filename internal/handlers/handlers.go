@@ -34,9 +34,9 @@ func MainPage(rw http.ResponseWriter, r *http.Request) {
 	mtx.Unlock()
 
 	rw.Header().Set("Content-Type", "text/plain")
-	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(*config.BaseURL+key)))
+	rw.Header().Set("Content-Length", fmt.Sprintf("%d", len(*config.BaseURL+"/"+key)))
 	rw.WriteHeader(http.StatusCreated)
-	rw.Write([]byte(*config.BaseURL + key))
+	rw.Write([]byte(*config.BaseURL + "/" + key))
 }
 
 func IDPage(rw http.ResponseWriter, r *http.Request) {
