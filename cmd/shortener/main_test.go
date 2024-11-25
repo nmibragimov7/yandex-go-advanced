@@ -114,7 +114,7 @@ func TestIdPage(t *testing.T) {
 
 			request = httptest.NewRequest(test.method, parsedURL.Path, nil)
 			w = httptest.NewRecorder()
-			IdPage(w, request)
+			IDPage(w, request)
 
 			res = w.Result()
 

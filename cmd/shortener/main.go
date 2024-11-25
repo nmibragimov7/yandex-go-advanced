@@ -51,7 +51,7 @@ func MainPage(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(baseURL + key))
 }
 
-func IdPage(rw http.ResponseWriter, r *http.Request) {
+func IDPage(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -74,7 +74,7 @@ func IdPage(rw http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/{id}`, IdPage)
+	mux.HandleFunc(`/{id}`, IDPage)
 	mux.HandleFunc(`/`, MainPage)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
