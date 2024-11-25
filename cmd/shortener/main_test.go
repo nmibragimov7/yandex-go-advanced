@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"yandex-go-advanced/internal/handlers"
 )
 
 func TestMainPage(t *testing.T) {
@@ -54,7 +55,7 @@ func TestMainPage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.method, test.path, bytes.NewBuffer([]byte(test.body)))
 			w := httptest.NewRecorder()
-			MainPage(w, request)
+			handlers.MainPage(w, request)
 
 			res := w.Result()
 			assert.Equal(t, test.want.code, res.StatusCode)
@@ -102,7 +103,7 @@ func TestIdPage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
 			w := httptest.NewRecorder()
-			MainPage(w, request)
+			handlers.MainPage(w, request)
 
 			res := w.Result()
 			resBody, err := io.ReadAll(res.Body)
@@ -114,7 +115,7 @@ func TestIdPage(t *testing.T) {
 
 			request = httptest.NewRequest(test.method, parsedURL.Path, nil)
 			w = httptest.NewRecorder()
-			IDPage(w, request)
+			handlers.IDPage(w, request)
 
 			res = w.Result()
 			defer res.Body.Close()
