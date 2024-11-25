@@ -117,6 +117,7 @@ func TestIdPage(t *testing.T) {
 			IDPage(w, request)
 
 			res = w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
