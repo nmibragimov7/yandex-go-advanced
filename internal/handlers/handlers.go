@@ -56,6 +56,6 @@ func IDPage(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rw.Header().Set("Location", store[path])
 	rw.WriteHeader(http.StatusTemporaryRedirect)
+	rw.Header().Set("Location", store[path])
 }
