@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/pkg"
 )
 
@@ -13,8 +14,8 @@ func main() {
 	//mux.HandleFunc(`/{id}`, handlers.IDPage)
 	//mux.HandleFunc(`/`, handlers.MainPage)
 
-	pkg.Config()
+	pkg.ParseFlag()
 	fmt.Println("Server", *config.Server)
 
-	log.Fatal(http.ListenAndServe(*config.Server, pkg.Router()))
+	log.Fatal(http.ListenAndServe(*config.Server, handlers.Router()))
 }

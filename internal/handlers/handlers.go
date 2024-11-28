@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"yandex-go-advanced/internal/config"
@@ -12,6 +14,37 @@ import (
 
 var store = make(map[string]string)
 var mtx sync.Mutex
+
+func CustomMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		res := httptest.NewRecorder()
+		next.ServeHTTP(res, r)
+
+		if res.Code == http.StatusMethodNotAllowed {
+			rw.WriteHeader(http.StatusMethodNotAllowed)
+			rw.Write([]byte("Method Not Allowed"))
+			return
+		}
+
+		for k, v := range res.Header() {
+			rw.Header()[k] = v
+		}
+
+		rw.WriteHeader(res.Code)
+
+		rw.Write(res.Body.Bytes())
+	})
+}
+
+func Router() chi.Router {
+	r := chi.NewRouter()
+	r.Use(CustomMiddleware)
+
+	r.Post("/", MainPage)
+	r.Get(`/{id}`, IDPage)
+
+	return r
+}
 
 func MainPage(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -56,6 +89,6 @@ func IDPage(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rw.WriteHeader(http.StatusTemporaryRedirect)
 	rw.Header().Set("Location", store[path])
+	rw.WriteHeader(http.StatusTemporaryRedirect)
 }

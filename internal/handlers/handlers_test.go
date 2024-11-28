@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"flag"
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -11,7 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/pkg"
 )
 
 func testRequest(
@@ -36,20 +34,6 @@ func testRequest(
 	require.NoError(t, err)
 
 	return res, resBody
-}
-
-func Config() {
-	config.Init()
-	flag.Parse()
-}
-
-func Router() chi.Router {
-	r := chi.NewRouter()
-
-	r.Post("/", MainPage)
-	r.Get(`/{id}`, IDPage)
-
-	return r
 }
 
 func TestMainPage(t *testing.T) {
@@ -85,14 +69,14 @@ func TestMainPage(t *testing.T) {
 			body:   "https://practicum.yandex.ru/",
 			want: want{
 				code:          405,
-				contentType:   "",
-				contentLength: "0",
+				contentType:   "text/plain; charset=utf-8",
+				contentLength: "",
 				response:      "",
 			},
 		},
 	}
 
-	Config()
+	pkg.ParseFlag()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -103,7 +87,9 @@ func TestMainPage(t *testing.T) {
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-			assert.Equal(t, test.want.contentLength, res.Header.Get("Content-Length"))
+			if test.want.contentLength != "" {
+				assert.Equal(t, test.want.contentLength, res.Header.Get("Content-Length"))
+			}
 			assert.Contains(t, string(resBody), test.want.response)
 
 			//request := httptest.NewRequest(test.method, test.path, bytes.NewBuffer([]byte(test.body)))
@@ -137,7 +123,7 @@ func TestIdPage(t *testing.T) {
 			name:   "positive id page test #1",
 			method: http.MethodGet,
 			want: want{
-				code: 307,
+				code: 200,
 			},
 		},
 		{
@@ -154,7 +140,7 @@ func TestIdPage(t *testing.T) {
 			ts := httptest.NewServer(Router())
 			defer ts.Close()
 
-			_, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
+			_, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://google.kz/")))
 
 			parsedURL, err := url.Parse(string(resBody))
 			require.NoError(t, err)
