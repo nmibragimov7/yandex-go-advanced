@@ -84,6 +84,7 @@ func TestMainPage(t *testing.T) {
 			defer ts.Close()
 
 			res, resBody := testRequest(t, ts, test.method, test.path, bytes.NewBuffer([]byte(test.body)))
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
@@ -140,13 +141,15 @@ func TestIdPage(t *testing.T) {
 			ts := httptest.NewServer(Router())
 			defer ts.Close()
 
-			_, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://google.kz/")))
+			resp, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://google.kz/")))
+			defer resp.Body.Close()
 
 			parsedURL, err := url.Parse(string(resBody))
 			require.NoError(t, err)
 			require.NotNil(t, parsedURL, "Parsed URL should not be nil")
 
 			res, _ := testRequest(t, ts, test.method, parsedURL.Path, nil)
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 
