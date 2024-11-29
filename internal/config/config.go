@@ -19,8 +19,8 @@ func Init() string {
 	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
 		Server = &envServerAddress
 	}
-	if envBaseUrl := os.Getenv("BASE_URL"); envBaseUrl != "" {
-		BaseURL = &envBaseUrl
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		BaseURL = &envBaseURL
 	}
 
 	return *Server
