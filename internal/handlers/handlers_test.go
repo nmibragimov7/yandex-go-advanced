@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"yandex-go-advanced/internal/pkg"
+	"yandex-go-advanced/internal/config"
 )
 
 func testRequest(
@@ -76,7 +76,7 @@ func TestMainPage(t *testing.T) {
 		},
 	}
 
-	pkg.ParseFlag()
+	config.Init()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
