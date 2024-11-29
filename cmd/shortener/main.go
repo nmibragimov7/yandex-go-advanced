@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	//mux := http.NewServeMux()
+	//mux := http.NewServeMux()x
 	//mux.HandleFunc(`/{id}`, handlers.IDPage)
 	//mux.HandleFunc(`/`, handlers.MainPage)
 

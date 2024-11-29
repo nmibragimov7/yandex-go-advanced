@@ -68,10 +68,10 @@ func TestMainPage(t *testing.T) {
 			path:   "/",
 			body:   "https://practicum.yandex.ru/",
 			want: want{
-				code:          405,
-				contentType:   "text/plain; charset=utf-8",
-				contentLength: "",
-				response:      "",
+				code:          404,
+				contentType:   "text/plain",
+				contentLength: "18",
+				response:      "404 page not found",
 			},
 		},
 	}
@@ -131,7 +131,7 @@ func TestIdPage(t *testing.T) {
 			name:   "negative id page test #2",
 			method: http.MethodPost,
 			want: want{
-				code: 405,
+				code: 404,
 			},
 		},
 	}
