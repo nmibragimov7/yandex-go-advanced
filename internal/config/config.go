@@ -5,23 +5,32 @@ import (
 	"os"
 )
 
-var (
-	Server  *string
-	BaseURL *string
-)
+type Config struct {
+	server  *string
+	baseURL *string
+}
+
+var globalConfig = Config{
+	server:  nil,
+	baseURL: nil,
+}
+
+func GetBaseURL() *string {
+	return globalConfig.baseURL
+}
 
 func Init() string {
-	Server = flag.String("a", ":8080", "Server URL")
-	BaseURL = flag.String("b", "http://localhost:8080", "Base URL")
+	globalConfig.server = flag.String("a", ":8080", "Server URL")
+	globalConfig.baseURL = flag.String("b", "http://localhost:8080", "Base URL")
 
 	flag.Parse()
 
-	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
-		Server = &envServerAddress
+	if envServerAddress, exists := os.LookupEnv("SERVER_ADDRESS"); exists {
+		globalConfig.server = &envServerAddress
 	}
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		BaseURL = &envBaseURL
+	if envBaseURL, exists := os.LookupEnv("BASE_URL"); exists {
+		globalConfig.baseURL = &envBaseURL
 	}
 
-	return *Server
+	return *globalConfig.server
 }

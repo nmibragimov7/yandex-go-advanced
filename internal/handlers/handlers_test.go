@@ -92,21 +92,6 @@ func TestMainPage(t *testing.T) {
 				assert.Equal(t, test.want.contentLength, res.Header.Get("Content-Length"))
 			}
 			assert.Contains(t, string(resBody), test.want.response)
-
-			//request := httptest.NewRequest(test.method, test.path, bytes.NewBuffer([]byte(test.body)))
-			//w := httptest.NewRecorder()
-			//MainPage(w, request)
-			//
-			//res := w.Result()
-			//assert.Equal(t, test.want.code, res.StatusCode)
-			//assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-			//assert.Equal(t, test.want.contentLength, res.Header.Get("Content-Length"))
-			//
-			//resBody, err := io.ReadAll(res.Body)
-			//defer res.Body.Close()
-			//
-			//require.NoError(t, err)
-			//assert.Contains(t, string(resBody), test.want.response)
 		})
 	}
 }
@@ -152,28 +137,6 @@ func TestIdPage(t *testing.T) {
 			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
-
-			//request := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
-			//w := httptest.NewRecorder()
-			//MainPage(w, request)
-			//
-			//res := w.Result()
-			//resBody, err := io.ReadAll(res.Body)
-			//require.NoError(t, err)
-			//defer res.Body.Close()
-			//
-			//parsedURL, err := url.Parse(string(resBody))
-			//require.NoError(t, err)
-			//
-			//request = httptest.NewRequest(test.method, parsedURL.Path, nil)
-			//w = httptest.NewRecorder()
-			//IDPage(w, request)
-			//
-			//res = w.Result()
-			//defer res.Body.Close()
-			//
-			//assert.Equal(t, test.want.code, res.StatusCode)
-			//assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 		})
 	}
 }
