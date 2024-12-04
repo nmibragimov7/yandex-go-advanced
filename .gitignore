@@ -23,3 +23,5 @@ vendor/
 .vscode
 
 golangci-lint
+
+yandex_go_advanced

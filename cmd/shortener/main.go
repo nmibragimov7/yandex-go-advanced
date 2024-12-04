@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
+	"yandex-go-advanced/internal/storage"
 )
 
 func main() {
 	server := config.Init()
-	fmt.Println("server", server)
+	store := storage.NewStore()
 
-	log.Fatal(http.ListenAndServe(server, handlers.Router()))
+	log.Fatal(http.ListenAndServe(server, handlers.Router(store)))
 }

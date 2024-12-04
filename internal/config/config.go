@@ -6,31 +6,31 @@ import (
 )
 
 type Config struct {
-	server  *string
-	baseURL *string
+	Server  *string
+	BaseURL *string
 }
 
 var globalConfig = Config{
-	server:  nil,
-	baseURL: nil,
+	Server:  nil,
+	BaseURL: nil,
 }
 
-func GetBaseURL() *string {
-	return globalConfig.baseURL
+func GetConfig() Config {
+	return globalConfig
 }
 
 func Init() string {
-	globalConfig.server = flag.String("a", ":8080", "Server URL")
-	globalConfig.baseURL = flag.String("b", "http://localhost:8080", "Base URL")
+	globalConfig.Server = flag.String("a", ":8080", "Server URL")
+	globalConfig.BaseURL = flag.String("b", "http://localhost:8080", "Base URL")
 
 	flag.Parse()
 
-	if envServerAddress, exists := os.LookupEnv("SERVER_ADDRESS"); exists {
-		globalConfig.server = &envServerAddress
+	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
+		globalConfig.Server = &envServerAddress
 	}
-	if envBaseURL, exists := os.LookupEnv("BASE_URL"); exists {
-		globalConfig.baseURL = &envBaseURL
+	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
+		globalConfig.BaseURL = &envBaseURL
 	}
 
-	return *globalConfig.server
+	return *globalConfig.Server
 }

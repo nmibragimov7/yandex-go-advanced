@@ -6,43 +6,28 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 )
 
-type Store struct {
-	store map[string]string
-	mtx   *sync.Mutex
-}
-
-func (s *Store) GetStore() map[string]string {
-	return s.store
-}
-func (s *Store) SaveStore(key, url string) {
-	globalStore.mtx.Lock()
-	globalStore.store[key] = url
-	globalStore.mtx.Unlock()
-}
-
-var globalStore = Store{
-	store: make(map[string]string),
-	mtx:   &sync.Mutex{},
-}
-
-func Router() *gin.Engine {
+func Router(store *storage.Store) *gin.Engine {
 	r := gin.Default()
 
-	r.POST("/", MainPage)
-	r.GET("/:id", IDPage)
+	r.POST("/", func(c *gin.Context) {
+		MainPage(c, store)
+	})
+	r.GET("/:id", func(c *gin.Context) {
+		IDPage(c, store)
+	})
 
 	return r
 }
 
-func MainPage(c *gin.Context) {
+func MainPage(c *gin.Context, store *storage.Store) {
 	if c.Request.Method != http.MethodPost {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.Write([]byte("Method Not Allowed"))
+		_, err := c.Writer.Write([]byte(http.StatusText(http.StatusMethodNotAllowed)))
 		if err != nil {
 			log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
 		}
@@ -54,7 +39,7 @@ func MainPage(c *gin.Context) {
 		log.Printf("ERROR: failed to read request body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.Write([]byte("Failed to read request body"))
+		_, err = c.Writer.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 		if err != nil {
 			log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
 		}
@@ -64,23 +49,24 @@ func MainPage(c *gin.Context) {
 	url := string(body)
 	key := util.GetKey()
 
-	globalStore.SaveStore(key, url)
+	store.SaveStore(key, url)
 
-	baseURL := config.GetBaseURL()
+	conf := config.GetConfig()
 
 	c.Writer.WriteHeader(http.StatusCreated)
 	c.Header("Content-Type", "text/plain")
-	c.Header("Content-Length", fmt.Sprintf("%d", len(*baseURL+"/"+key)))
-	_, err = c.Writer.Write([]byte(*baseURL + "/" + key))
+	c.Header("Content-Length", fmt.Sprintf("%d", len(*conf.BaseURL+"/"+key)))
+	_, err = c.Writer.Write([]byte(*conf.BaseURL + "/" + key))
 	if err != nil {
 		log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
+		return
 	}
 }
 
-func IDPage(c *gin.Context) {
+func IDPage(c *gin.Context, store *storage.Store) {
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.Write([]byte("Method Not Allowed"))
+		_, err := c.Writer.Write([]byte(http.StatusText(http.StatusMethodNotAllowed)))
 		if err != nil {
 			log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
 		}
@@ -90,21 +76,22 @@ func IDPage(c *gin.Context) {
 	path := c.Param("id")
 	if path == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
-		_, err := c.Writer.Write([]byte("Not Found"))
+		_, err := c.Writer.Write([]byte(http.StatusText(http.StatusNotFound)))
 		if err != nil {
 			log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
 		}
 		return
 	}
 
-	if globalStore.store[path] == "" {
+	if store.Store[path] == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
-		_, err := c.Writer.Write([]byte("Not Found"))
+		_, err := c.Writer.Write([]byte(http.StatusText(http.StatusNotFound)))
 		if err != nil {
 			log.Printf("ERROR: failed to send response body: %v, Path: %s, IP: %s", err, c.Request.URL.Path, c.ClientIP())
+			return
 		}
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, globalStore.store[path])
+	c.Redirect(http.StatusTemporaryRedirect, store.Store[path])
 }
