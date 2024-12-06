@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -21,8 +22,10 @@ func testRequest(
 	path string,
 	body *bytes.Buffer,
 ) (*http.Response, []byte) {
+	t.Helper()
+
 	if body == nil {
-		body = bytes.NewBuffer([]byte{})
+		body = bytes.NewBufferString("")
 	}
 
 	req, err := http.NewRequest(method, ts.URL+path, body)
@@ -30,7 +33,11 @@ func testRequest(
 
 	res, err := ts.Client().Do(req)
 	require.NoError(t, err)
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Printf("Response body close: %s", err.Error())
+		}
+	}()
 
 	resBody, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
@@ -86,8 +93,12 @@ func TestMainPage(t *testing.T) {
 			ts := httptest.NewServer(Router(conf, store))
 			defer ts.Close()
 
-			res, resBody := testRequest(t, ts, test.method, test.path, bytes.NewBuffer([]byte(test.body)))
-			defer res.Body.Close()
+			res, resBody := testRequest(t, ts, test.method, test.path, bytes.NewBufferString(test.body))
+			defer func() {
+				if err := res.Body.Close(); err != nil {
+					log.Printf("Response body close: %s", err.Error())
+				}
+			}()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
@@ -132,15 +143,23 @@ func TestIdPage(t *testing.T) {
 			ts := httptest.NewServer(Router(conf, store))
 			defer ts.Close()
 
-			resp, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://google.kz/")))
-			defer resp.Body.Close()
+			resp, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBufferString("https://google.kz/"))
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					log.Printf("Response body close: %s", err.Error())
+				}
+			}()
 
 			parsedURL, err := url.Parse(string(resBody))
 			require.NoError(t, err)
 			require.NotNil(t, parsedURL, "Parsed URL should not be nil")
 
 			res, _ := testRequest(t, ts, test.method, parsedURL.Path, nil)
-			defer res.Body.Close()
+			defer func() {
+				if err := res.Body.Close(); err != nil {
+					log.Printf("Response body close: %s", err.Error())
+				}
+			}()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 		})
