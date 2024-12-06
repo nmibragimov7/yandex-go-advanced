@@ -504,7 +504,7 @@ linters:
     - loggercheck
     - makezero
     - mirror
-    - mnd
+#    - mnd
     - musttag
     - nilerr
     - nilnil
