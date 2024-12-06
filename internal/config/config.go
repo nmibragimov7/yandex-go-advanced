@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"log"
 	"os"
 )
 
@@ -10,27 +11,32 @@ type Config struct {
 	BaseURL *string
 }
 
-var globalConfig = Config{
-	Server:  nil,
-	BaseURL: nil,
+func (c *Config) GetConfig() *Config {
+	return c
 }
 
-func GetConfig() Config {
-	return globalConfig
-}
+func Init() *Config {
+	instance := Config{
+		Server:  nil,
+		BaseURL: nil,
+	}
 
-func Init() string {
-	globalConfig.Server = flag.String("a", ":8080", "Server URL")
-	globalConfig.BaseURL = flag.String("b", "http://localhost:8080", "Base URL")
+	flags := flag.NewFlagSet("config", flag.ContinueOnError)
 
-	flag.Parse()
+	instance.Server = flags.String("a", ":8080", "Server URL")
+	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
+
+	err := flags.Parse(os.Args[1:])
+	if err != nil {
+		log.Printf("ERROR: flag Parse: %s", err.Error())
+	}
 
 	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
-		globalConfig.Server = &envServerAddress
+		instance.Server = &envServerAddress
 	}
 	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
-		globalConfig.BaseURL = &envBaseURL
+		instance.BaseURL = &envBaseURL
 	}
 
-	return *globalConfig.Server
+	return &instance
 }

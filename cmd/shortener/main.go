@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	server := config.Init()
-	store := storage.NewStore()
+	cnf := config.Init().GetConfig()
+	str := storage.NewStore()
 
-	log.Fatal(http.ListenAndServe(server, handlers.Router(store)))
+	log.Fatal(http.ListenAndServe(*cnf.Server, handlers.Router(cnf, str)))
 }

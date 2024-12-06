@@ -7,13 +7,11 @@ type Store struct {
 	mtx   *sync.Mutex
 }
 
-func (s *Store) GetStore() map[string]string {
-	return s.Store
-}
 func (s *Store) SaveStore(key, url string) {
 	s.mtx.Lock()
-	s.Store[key] = url
 	defer s.mtx.Unlock()
+
+	s.Store[key] = url
 }
 
 func NewStore() *Store {

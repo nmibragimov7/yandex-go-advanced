@@ -77,12 +77,12 @@ func TestMainPage(t *testing.T) {
 		},
 	}
 
-	config.Init()
+	conf := config.Init()
 	store := storage.NewStore()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(Router(store))
+			ts := httptest.NewServer(Router(conf, store))
 			defer ts.Close()
 
 			res, resBody := testRequest(t, ts, test.method, test.path, bytes.NewBuffer([]byte(test.body)))
@@ -123,11 +123,12 @@ func TestIdPage(t *testing.T) {
 		},
 	}
 
+	conf := config.Init()
 	store := storage.NewStore()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(Router(store))
+			ts := httptest.NewServer(Router(conf, store))
 			defer ts.Close()
 
 			resp, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBuffer([]byte("https://google.kz/")))
