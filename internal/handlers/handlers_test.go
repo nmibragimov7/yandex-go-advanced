@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +9,9 @@ import (
 	"testing"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func testRequest(
