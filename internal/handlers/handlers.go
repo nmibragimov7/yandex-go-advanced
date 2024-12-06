@@ -83,7 +83,9 @@ func IDPage(c *gin.Context, str *storage.Store) {
 		return
 	}
 
-	if str.Store[path] == "" {
+	value := str.Get(path)
+
+	if value == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.Write([]byte(http.StatusText(http.StatusNotFound)))
 		if err != nil {
@@ -93,5 +95,5 @@ func IDPage(c *gin.Context, str *storage.Store) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, str.Store[path])
+	c.Redirect(http.StatusTemporaryRedirect, value)
 }

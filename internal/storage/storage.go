@@ -1,6 +1,8 @@
 package storage
 
-import "sync"
+import (
+	"sync"
+)
 
 type Store struct {
 	Store map[string]string
@@ -12,6 +14,12 @@ func (s *Store) SaveStore(key, url string) {
 	defer s.mtx.Unlock()
 
 	s.Store[key] = url
+}
+
+func (s *Store) Get(key string) string {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	return s.Store[key]
 }
 
 func NewStore() *Store {
