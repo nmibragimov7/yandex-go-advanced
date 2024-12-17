@@ -7,11 +7,11 @@ import (
 )
 
 type Logger struct {
-	Sugar *zap.SugaredLogger
+	sugar *zap.SugaredLogger
 }
 
 func (l *Logger) Get() *zap.SugaredLogger {
-	return l.Sugar
+	return l.sugar
 }
 
 func InitLogger() *Logger {
@@ -27,6 +27,6 @@ func InitLogger() *Logger {
 	}()
 
 	return &Logger{
-		Sugar: logger.Sugar(),
+		sugar: logger.Sugar(),
 	}
 }

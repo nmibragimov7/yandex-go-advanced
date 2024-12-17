@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"yandex-go-advanced/internal/config"
@@ -14,40 +13,52 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const errorText = "ERROR: failed to send response body: %v, Path: %s, IP: %s"
-
 func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(middleware.LoggerMiddleware(sgr))
 	r.POST("/", func(c *gin.Context) {
-		MainPage(c, cnf, str)
+		MainPage(c, cnf, str, sgr)
 	})
 	r.GET("/:id", func(c *gin.Context) {
-		IDPage(c, str)
+		IDPage(c, str, sgr)
 	})
 
 	return r
 }
 
-func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store) {
+func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+	sugar := sgr.Get()
+
 	if c.Request.Method != http.MethodPost {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			sugar.Error(
+				"error", err.Error(),
+				"uri", c.Request.URL.Path,
+				"ip", c.ClientIP(),
+			)
 		}
 		return
 	}
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+		sugar.Error(
+			"error", err.Error(),
+			"uri", c.Request.URL.Path,
+			"ip", c.ClientIP(),
+		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			sugar.Error(
+				"error", err.Error(),
+				"uri", c.Request.URL.Path,
+				"ip", c.ClientIP(),
+			)
 		}
 		return
 	}
@@ -64,17 +75,27 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store) {
 	c.Header("Content-Length", strconv.Itoa(len(*configs.BaseURL+"/"+key)))
 	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
 	if err != nil {
-		log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+		sugar.Error(
+			"error", err.Error(),
+			"uri", c.Request.URL.Path,
+			"ip", c.ClientIP(),
+		)
 		return
 	}
 }
 
-func IDPage(c *gin.Context, str *storage.Store) {
+func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
+	sugar := sgr.Get()
+
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			sugar.Error(
+				"error", err.Error(),
+				"uri", c.Request.URL.Path,
+				"ip", c.ClientIP(),
+			)
 		}
 		return
 	}
@@ -84,7 +105,11 @@ func IDPage(c *gin.Context, str *storage.Store) {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			sugar.Error(
+				"error", err.Error(),
+				"uri", c.Request.URL.Path,
+				"ip", c.ClientIP(),
+			)
 		}
 		return
 	}
@@ -95,7 +120,11 @@ func IDPage(c *gin.Context, str *storage.Store) {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			sugar.Error(
+				"error", err.Error(),
+				"uri", c.Request.URL.Path,
+				"ip", c.ClientIP(),
+			)
 			return
 		}
 		return

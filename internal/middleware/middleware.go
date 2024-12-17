@@ -38,8 +38,7 @@ func LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 		duration := time.Since(start)
 
 		sugar := sgr.Get()
-		sugar.Infow(
-			"request",
+		sugar.Info(
 			"uri", uri,
 			"method", method,
 			"duration", duration,
