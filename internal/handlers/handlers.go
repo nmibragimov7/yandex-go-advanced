@@ -13,6 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	logKeyError = "error"
+	logKeyURI   = "uri"
+	logKeyIp    = "ip"
+)
+
 func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
 	r := gin.Default()
 
@@ -35,9 +41,9 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
 			sugar.Error(
-				"error", err.Error(),
-				"uri", c.Request.URL.Path,
-				"ip", c.ClientIP(),
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIp, c.ClientIP(),
 			)
 		}
 		return
@@ -46,18 +52,18 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		sugar.Error(
-			"error", err.Error(),
-			"uri", c.Request.URL.Path,
-			"ip", c.ClientIP(),
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIp, c.ClientIP(),
 		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
 			sugar.Error(
-				"error", err.Error(),
-				"uri", c.Request.URL.Path,
-				"ip", c.ClientIP(),
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIp, c.ClientIP(),
 			)
 		}
 		return
@@ -76,9 +82,9 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
 	if err != nil {
 		sugar.Error(
-			"error", err.Error(),
-			"uri", c.Request.URL.Path,
-			"ip", c.ClientIP(),
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIp, c.ClientIP(),
 		)
 		return
 	}
@@ -92,9 +98,9 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
 			sugar.Error(
-				"error", err.Error(),
-				"uri", c.Request.URL.Path,
-				"ip", c.ClientIP(),
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIp, c.ClientIP(),
 			)
 		}
 		return
@@ -106,9 +112,9 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
 			sugar.Error(
-				"error", err.Error(),
-				"uri", c.Request.URL.Path,
-				"ip", c.ClientIP(),
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIp, c.ClientIP(),
 			)
 		}
 		return
@@ -121,9 +127,9 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
 			sugar.Error(
-				"error", err.Error(),
-				"uri", c.Request.URL.Path,
-				"ip", c.ClientIP(),
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIp, c.ClientIP(),
 			)
 			return
 		}
