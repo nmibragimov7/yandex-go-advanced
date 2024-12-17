@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/logger"
+	"yandex-go-advanced/internal/middleware"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
@@ -14,9 +16,10 @@ import (
 
 const errorText = "ERROR: failed to send response body: %v, Path: %s, IP: %s"
 
-func Router(cnf *config.Config, str *storage.Store) *gin.Engine {
+func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(middleware.LoggerMiddleware(sgr))
 	r.POST("/", func(c *gin.Context) {
 		MainPage(c, cnf, str)
 	})
