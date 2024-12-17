@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"testing"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/storage"
 
 	"github.com/stretchr/testify/assert"
@@ -87,10 +88,11 @@ func TestMainPage(t *testing.T) {
 
 	conf := config.Init()
 	store := storage.NewStore()
+	sugar := logger.InitLogger()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(Router(conf, store))
+			ts := httptest.NewServer(Router(conf, store, sugar))
 			defer ts.Close()
 
 			res, resBody := testRequest(t, ts, test.method, test.path, bytes.NewBufferString(test.body))
@@ -137,10 +139,11 @@ func TestIdPage(t *testing.T) {
 
 	conf := config.Init()
 	store := storage.NewStore()
+	sugar := logger.InitLogger()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(Router(conf, store))
+			ts := httptest.NewServer(Router(conf, store, sugar))
 			defer ts.Close()
 
 			resp, resBody := testRequest(t, ts, http.MethodPost, "/", bytes.NewBufferString("https://google.kz/"))
