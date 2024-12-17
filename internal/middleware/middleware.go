@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 	"yandex-go-advanced/internal/logger"
 
@@ -16,7 +17,11 @@ type responseBodyWriter struct {
 func (w *responseBodyWriter) Write(data []byte) (int, error) {
 	w.body.Write(data)
 
-	return w.ResponseWriter.Write(data)
+	n, err := w.ResponseWriter.Write(data)
+	if err != nil {
+		return n, fmt.Errorf("response writer error: %w", err)
+	}
+	return n, nil
 }
 
 func LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {

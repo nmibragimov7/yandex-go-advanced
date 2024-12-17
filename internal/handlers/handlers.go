@@ -16,7 +16,7 @@ import (
 const (
 	logKeyError = "error"
 	logKeyURI   = "uri"
-	logKeyIp    = "ip"
+	logKeyIP    = "ip"
 )
 
 func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
@@ -43,7 +43,7 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 			sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
-				logKeyIp, c.ClientIP(),
+				logKeyIP, c.ClientIP(),
 			)
 		}
 		return
@@ -54,7 +54,7 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 		sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
-			logKeyIp, c.ClientIP(),
+			logKeyIP, c.ClientIP(),
 		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -63,7 +63,7 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 			sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
-				logKeyIp, c.ClientIP(),
+				logKeyIP, c.ClientIP(),
 			)
 		}
 		return
@@ -84,7 +84,7 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 		sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
-			logKeyIp, c.ClientIP(),
+			logKeyIP, c.ClientIP(),
 		)
 		return
 	}
@@ -100,7 +100,7 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 			sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
-				logKeyIp, c.ClientIP(),
+				logKeyIP, c.ClientIP(),
 			)
 		}
 		return
@@ -114,7 +114,7 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 			sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
-				logKeyIp, c.ClientIP(),
+				logKeyIP, c.ClientIP(),
 			)
 		}
 		return
@@ -129,7 +129,7 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 			sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
-				logKeyIp, c.ClientIP(),
+				logKeyIP, c.ClientIP(),
 			)
 			return
 		}
