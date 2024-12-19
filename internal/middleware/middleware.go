@@ -42,8 +42,11 @@ func LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 		size := c.Writer.Size()
 		duration := time.Since(start)
 
+		fmt.Printf("Response body: %s\n", rbw.body.String())
+
 		sugar := sgr.Get()
-		sugar.Info(
+		sugar.Infow(
+			"request",
 			"uri", uri,
 			"method", method,
 			"duration", duration,

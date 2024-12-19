@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/middleware"
+	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
@@ -28,6 +30,9 @@ func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Eng
 	})
 	r.GET("/:id", func(c *gin.Context) {
 		IDPage(c, str, sgr)
+	})
+	r.POST("/api/shorten", func(c *gin.Context) {
+		ShortenHandler(c, cnf, str, sgr)
 	})
 
 	return r
@@ -137,4 +142,110 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 	}
 
 	c.Redirect(http.StatusTemporaryRedirect, value)
+}
+
+func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+	sugar := sgr.Get()
+
+	var body models.ShortenRequestBody
+	bytes, err := c.GetRawData()
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		message := models.ShortenResponseError{
+			Message: http.StatusText(http.StatusInternalServerError),
+		}
+
+		bytes, err = json.Marshal(message)
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+			return
+		}
+
+		c.Header("Content-Type", "application/json")
+		c.Header("Content-Length", strconv.Itoa(len(bytes)))
+
+		c.JSON(http.StatusInternalServerError, message)
+		return
+	}
+	if err := json.Unmarshal(bytes, &body); err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		message := models.ShortenResponseError{
+			Message: http.StatusText(http.StatusInternalServerError),
+		}
+
+		bytes, err = json.Marshal(message)
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+			return
+		}
+
+		c.Header("Content-Type", "application/json")
+		c.Header("Content-Length", strconv.Itoa(len(bytes)))
+
+		c.JSON(http.StatusInternalServerError, message)
+		return
+	}
+
+	if body.URL == "" {
+		message := models.ShortenResponseError{
+			Message: http.StatusText(http.StatusBadRequest),
+		}
+
+		bytes, err = json.Marshal(message)
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+			return
+		}
+
+		c.Header("Content-Type", "application/json")
+		c.Header("Content-Length", strconv.Itoa(len(bytes)))
+
+		c.JSON(http.StatusBadRequest, message)
+		return
+	}
+
+	key := util.GetKey()
+	str.SaveStore(key, body.URL)
+	configs := cnf.GetConfig()
+
+	response := models.ShortenResponse{
+		Result: *configs.BaseURL + "/" + key,
+	}
+
+	bytes, err = json.Marshal(response)
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.Header("Content-Length", strconv.Itoa(len(bytes)))
+
+	c.JSON(http.StatusCreated, response)
 }
