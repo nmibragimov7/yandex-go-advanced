@@ -16,10 +16,42 @@ import (
 )
 
 const (
-	logKeyError = "error"
-	logKeyURI   = "uri"
-	logKeyIP    = "ip"
+	logKeyError     = "error"
+	logKeyURI       = "uri"
+	logKeyIP        = "ip"
+	contentType     = "Content-Type"
+	contentLength   = "Content-Length"
+	applicationJSON = "application/json"
 )
+
+func sendErrorResponse(c *gin.Context, sgr *logger.Logger, statusCode int, err error) {
+	sugar := sgr.Get()
+
+	sugar.Error(
+		logKeyError, err.Error(),
+		logKeyURI, c.Request.URL.Path,
+		logKeyIP, c.ClientIP(),
+	)
+
+	message := models.ShortenResponseError{
+		Message: http.StatusText(statusCode),
+	}
+
+	bytes, err := json.Marshal(message)
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+		return
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.Header(contentLength, strconv.Itoa(len(bytes)))
+
+	c.JSON(statusCode, message)
+}
 
 func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
 	r := gin.Default()
@@ -82,8 +114,8 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 	configs := cnf.GetConfig()
 
 	c.Writer.WriteHeader(http.StatusCreated)
-	c.Header("Content-Type", "text/plain")
-	c.Header("Content-Length", strconv.Itoa(len(*configs.BaseURL+"/"+key)))
+	c.Header(contentType, "text/plain")
+	c.Header(contentLength, strconv.Itoa(len(*configs.BaseURL+"/"+key)))
 	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
 	if err != nil {
 		sugar.Error(
@@ -145,62 +177,14 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 }
 
 func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
-	sugar := sgr.Get()
-
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
-		sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		message := models.ShortenResponseError{
-			Message: http.StatusText(http.StatusInternalServerError),
-		}
-
-		bytes, err = json.Marshal(message)
-		if err != nil {
-			sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
-			return
-		}
-
-		c.Header("Content-Type", "application/json")
-		c.Header("Content-Length", strconv.Itoa(len(bytes)))
-
-		c.JSON(http.StatusInternalServerError, message)
+		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
 		return
 	}
 	if err := json.Unmarshal(bytes, &body); err != nil {
-		sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		message := models.ShortenResponseError{
-			Message: http.StatusText(http.StatusInternalServerError),
-		}
-
-		bytes, err = json.Marshal(message)
-		if err != nil {
-			sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
-			return
-		}
-
-		c.Header("Content-Type", "application/json")
-		c.Header("Content-Length", strconv.Itoa(len(bytes)))
-
-		c.JSON(http.StatusInternalServerError, message)
+		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -211,16 +195,12 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 
 		bytes, err = json.Marshal(message)
 		if err != nil {
-			sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
+			sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
 			return
 		}
 
-		c.Header("Content-Type", "application/json")
-		c.Header("Content-Length", strconv.Itoa(len(bytes)))
+		c.Header(contentType, applicationJSON)
+		c.Header(contentLength, strconv.Itoa(len(bytes)))
 
 		c.JSON(http.StatusBadRequest, message)
 		return
@@ -236,16 +216,12 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 
 	bytes, err = json.Marshal(response)
 	if err != nil {
-		sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
+		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
 		return
 	}
 
-	c.Header("Content-Type", "application/json")
-	c.Header("Content-Length", strconv.Itoa(len(bytes)))
+	c.Header(contentType, applicationJSON)
+	c.Header(contentLength, strconv.Itoa(len(bytes)))
 
 	c.JSON(http.StatusCreated, response)
 }
