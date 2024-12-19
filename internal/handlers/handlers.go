@@ -24,7 +24,7 @@ const (
 	applicationJSON = "application/json"
 )
 
-func sendErrorResponse(c *gin.Context, sgr *logger.Logger, statusCode int, err error) {
+func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
 	sugar := sgr.Get()
 
 	sugar.Error(
@@ -34,7 +34,7 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, statusCode int, err e
 	)
 
 	message := models.ShortenResponseError{
-		Message: http.StatusText(statusCode),
+		Message: http.StatusText(http.StatusInternalServerError),
 	}
 
 	bytes, err := json.Marshal(message)
@@ -50,7 +50,7 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, statusCode int, err e
 	c.Header(contentType, applicationJSON)
 	c.Header(contentLength, strconv.Itoa(len(bytes)))
 
-	c.JSON(statusCode, message)
+	c.JSON(http.StatusInternalServerError, message)
 }
 
 func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
@@ -180,11 +180,11 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
-		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
+		sendErrorResponse(c, sgr, err)
 		return
 	}
 	if err := json.Unmarshal(bytes, &body); err != nil {
-		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
+		sendErrorResponse(c, sgr, err)
 		return
 	}
 
@@ -195,7 +195,7 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 
 		bytes, err = json.Marshal(message)
 		if err != nil {
-			sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
+			sendErrorResponse(c, sgr, err)
 			return
 		}
 
@@ -216,7 +216,7 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 
 	bytes, err = json.Marshal(response)
 	if err != nil {
-		sendErrorResponse(c, sgr, http.StatusInternalServerError, err)
+		sendErrorResponse(c, sgr, err)
 		return
 	}
 
