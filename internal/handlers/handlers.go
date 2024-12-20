@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/logger"
-	"yandex-go-advanced/internal/middleware"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
+
+type Provider struct{}
 
 const (
 	logKeyError     = "error"
@@ -53,24 +54,7 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
 	c.JSON(http.StatusInternalServerError, message)
 }
 
-func Router(cnf *config.Config, str *storage.Store, sgr *logger.Logger) *gin.Engine {
-	r := gin.Default()
-
-	r.Use(middleware.LoggerMiddleware(sgr))
-	r.POST("/", func(c *gin.Context) {
-		MainPage(c, cnf, str, sgr)
-	})
-	r.GET("/:id", func(c *gin.Context) {
-		IDPage(c, str, sgr)
-	})
-	r.POST("/api/shorten", func(c *gin.Context) {
-		ShortenHandler(c, cnf, str, sgr)
-	})
-
-	return r
-}
-
-func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
 	sugar := sgr.Get()
 
 	if c.Request.Method != http.MethodPost {
@@ -127,7 +111,7 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logge
 	}
 }
 
-func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 	sugar := sgr.Get()
 
 	if c.Request.Method != http.MethodGet {
@@ -176,7 +160,7 @@ func IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
 	c.Redirect(http.StatusTemporaryRedirect, value)
 }
 
-func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
@@ -200,7 +184,6 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 		}
 
 		c.Header(contentType, applicationJSON)
-		c.Header(contentLength, strconv.Itoa(len(bytes)))
 
 		c.JSON(http.StatusBadRequest, message)
 		return
@@ -221,7 +204,6 @@ func ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr 
 	}
 
 	c.Header(contentType, applicationJSON)
-	c.Header(contentLength, strconv.Itoa(len(bytes)))
 
 	c.JSON(http.StatusCreated, response)
 }
