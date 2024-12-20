@@ -177,14 +177,7 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 			Message: http.StatusText(http.StatusBadRequest),
 		}
 
-		bytes, err = json.Marshal(message)
-		if err != nil {
-			sendErrorResponse(c, sgr, err)
-			return
-		}
-
 		c.Header(contentType, applicationJSON)
-
 		c.JSON(http.StatusBadRequest, message)
 		return
 	}
@@ -204,6 +197,5 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 	}
 
 	c.Header(contentType, applicationJSON)
-
 	c.JSON(http.StatusCreated, response)
 }
