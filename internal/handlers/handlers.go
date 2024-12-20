@@ -190,12 +190,6 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 		Result: *configs.BaseURL + "/" + key,
 	}
 
-	bytes, err = json.Marshal(response)
-	if err != nil {
-		sendErrorResponse(c, sgr, err)
-		return
-	}
-
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, response)
 }
