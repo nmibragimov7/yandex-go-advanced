@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,13 +44,13 @@ type gzipReader struct {
 
 func (r *gzipReader) Read(b []byte) (int, error) {
 	if len(b) == 0 {
-		return 0, fmt.Errorf("buffer is empty")
+		return 0, errors.New("buffer is empty")
 	}
 
 	n, err := r.zr.Read(b)
 	if err != nil {
-		if err == io.EOF {
-			return n, err
+		if errors.Is(err, io.EOF) {
+			return n, nil
 		}
 		return n, fmt.Errorf("failed to read compressed data: %w", err)
 	}

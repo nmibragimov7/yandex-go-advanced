@@ -105,31 +105,31 @@ func TestGzipMiddleware(t *testing.T) {
 		})
 	}
 
-	type wantId struct {
+	type wantID struct {
 		code int
 	}
-	testsId := []struct {
+	testsID := []struct {
 		name   string
 		method string
-		want   wantId
+		want   wantID
 	}{
 		{
 			name:   "positive gzip middleware id api test #1",
 			method: http.MethodGet,
-			want: wantId{
+			want: wantID{
 				code: http.StatusOK,
 			},
 		},
 		{
 			name:   "negative gzip middleware id api test #2",
 			method: http.MethodPost,
-			want: wantId{
+			want: wantID{
 				code: http.StatusNotFound,
 			},
 		},
 	}
 
-	for _, test := range testsId {
+	for _, test := range testsID {
 		t.Run(test.name, func(t *testing.T) {
 			ts := httptest.NewServer(router.Router(conf, store, sugar, mp, hp))
 			defer ts.Close()
