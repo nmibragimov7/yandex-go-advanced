@@ -18,20 +18,15 @@ func Router(
 ) *gin.Engine {
 	r := gin.Default()
 
-	gzipLoggerGroup := r.Group("/")
-
-	gzipLoggerGroup.Use(mp.GzipMiddleware(sgr))
-	gzipLoggerGroup.Use(mp.LoggerMiddleware(sgr))
-	gzipLoggerGroup.POST("/", func(c *gin.Context) {
+	r.Use(mp.GzipMiddleware(sgr))
+	r.Use(mp.LoggerMiddleware(sgr))
+	r.POST("/", func(c *gin.Context) {
 		hp.MainPage(c, cnf, str, sgr)
 	})
-	gzipLoggerGroup.POST("/api/shorten", func(c *gin.Context) {
+	r.POST("/api/shorten", func(c *gin.Context) {
 		hp.ShortenHandler(c, cnf, str, sgr)
 	})
-
-	loggerGroup := r.Group("/")
-	loggerGroup.Use(mp.LoggerMiddleware(sgr))
-	loggerGroup.GET("/:id", func(c *gin.Context) {
+	r.GET("/:id", func(c *gin.Context) {
 		hp.IDPage(c, str, sgr)
 	})
 
