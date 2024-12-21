@@ -50,7 +50,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 
 		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
-		if supportsGzip && (supportsJSON || supportsHTML) {
+		if c.Writer.Status() < 300 && supportsGzip && (supportsJSON || supportsHTML) {
 			zw := gzip.NewWriter(c.Writer)
 			defer func() {
 				err := zw.Close()
