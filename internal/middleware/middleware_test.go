@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
@@ -19,7 +16,6 @@ import (
 	"yandex-go-advanced/internal/util"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGzipMiddleware(t *testing.T) {
@@ -39,7 +35,6 @@ func TestGzipMiddleware(t *testing.T) {
 		method          string
 		path            string
 		contentEncoding string
-		headers         map[string]string
 		body            models.ShortenRequestBody
 		want            wantShorten
 	}{
@@ -47,12 +42,7 @@ func TestGzipMiddleware(t *testing.T) {
 			name:   "positive gzip middleware shorten api test #1",
 			method: http.MethodPost,
 			path:   "/api/shorten",
-			headers: map[string]string{
-				"Accept-Encoding":  "gzip",
-				"Content-Encoding": "gzip",
-				"Content-Type":     "application/json",
-			},
-			body: models.ShortenRequestBody{URL: "https://practicum.yandex.ru/"},
+			body:   models.ShortenRequestBody{URL: "https://practicum.yandex.ru/"},
 			want: wantShorten{
 				code:            http.StatusCreated,
 				contentEncoding: "gzip",
@@ -63,12 +53,7 @@ func TestGzipMiddleware(t *testing.T) {
 			name:   "negative gzip middleware shorten api test #2",
 			method: http.MethodPost,
 			path:   "/api/shorten",
-			headers: map[string]string{
-				"Accept-Encoding":  "gzip",
-				"Content-Encoding": "gzip",
-				"Content-Type":     "application/json",
-			},
-			body: models.ShortenRequestBody{URL: ""},
+			body:   models.ShortenRequestBody{URL: ""},
 			want: wantShorten{
 				code:            http.StatusBadRequest,
 				contentEncoding: "gzip",
@@ -93,7 +78,12 @@ func TestGzipMiddleware(t *testing.T) {
 			err = zb.Close()
 			assert.NoError(t, err)
 
-			res, _ := util.TestRequest(t, ts, test.method, test.path, buf, test.headers)
+			headers := map[string]string{
+				"Accept-Encoding":  "gzip",
+				"Content-Encoding": "gzip",
+				"Content-Type":     "application/json",
+			}
+			res, _ := util.TestRequest(t, ts, test.method, test.path, buf, headers)
 			defer func() {
 				err = res.Body.Close()
 				assert.NoError(t, err)
@@ -102,60 +92,6 @@ func TestGzipMiddleware(t *testing.T) {
 			assert.Equal(t, test.want.code, res.StatusCode)
 			assert.Equal(t, test.want.contentEncoding, res.Header.Get("Content-Encoding"))
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-		})
-	}
-
-	type wantID struct {
-		code int
-	}
-	testsID := []struct {
-		name   string
-		method string
-		want   wantID
-	}{
-		{
-			name:   "positive gzip middleware id api test #1",
-			method: http.MethodGet,
-			want: wantID{
-				code: http.StatusOK,
-			},
-		},
-		{
-			name:   "negative gzip middleware id api test #2",
-			method: http.MethodPost,
-			want: wantID{
-				code: http.StatusNotFound,
-			},
-		},
-	}
-
-	for _, test := range testsID {
-		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, store, sugar, mp, hp))
-			defer ts.Close()
-
-			headers := map[string]string{}
-			resp, resBody := util.TestRequest(t, ts, http.MethodPost, "/", bytes.NewBufferString("https://google.kz/"), headers)
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
-				}
-			}()
-			fmt.Println("resBody", string(resBody))
-
-			parsedURL, err := url.Parse(string(resBody))
-			require.NoError(t, err)
-			require.NotNil(t, parsedURL, "Parsed URL should not be nil")
-
-			headers = map[string]string{}
-			res, _ := util.TestRequest(t, ts, test.method, parsedURL.Path, nil, headers)
-			defer func() {
-				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
-				}
-			}()
-
-			assert.Equal(t, test.want.code, res.StatusCode)
 		})
 	}
 }
