@@ -36,6 +36,15 @@ func (w *gzipWriter) Close() error {
 	return nil
 }
 
+type gzipReader struct {
+	zr *gzip.Reader
+	io.ReadCloser
+}
+
+func (r *gzipReader) Read(p []byte) (n int, err error) {
+	return r.zr.Read(p)
+}
+
 const (
 	logKeyError = "error"
 )
@@ -98,7 +107,10 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				}
 			}()
 
-			c.Request.Body = io.NopCloser(zr)
+			c.Request.Body = &gzipReader{
+				zr:         zr,
+				ReadCloser: c.Request.Body,
+			}
 		}
 
 		c.Next()
