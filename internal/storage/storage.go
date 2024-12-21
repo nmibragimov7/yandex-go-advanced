@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -19,6 +20,7 @@ func (s *Store) SaveStore(key, url string) {
 func (s *Store) Get(key string) string {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
+	fmt.Println("s.Store", s.Store)
 	return s.Store[key]
 }
 

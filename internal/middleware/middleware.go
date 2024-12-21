@@ -36,15 +36,6 @@ func (w *gzipWriter) Close() error {
 	return nil
 }
 
-type gzipReader struct {
-	zr *gzip.Reader
-	io.ReadCloser
-}
-
-func (r *gzipReader) Read(p []byte) (n int, err error) {
-	return r.zr.Read(p)
-}
-
 const (
 	logKeyError = "error"
 )
@@ -59,6 +50,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 
 		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
+
 		if supportsGzip && (supportsJSON || supportsHTML) {
 			zw := gzip.NewWriter(c.Writer)
 			defer func() {
@@ -79,7 +71,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 
 		contentEncoding := c.Request.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
-		if sendsGzip && (supportsJSON || supportsHTML) {
+		if sendsGzip {
 			zr, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
 				sugar.Errorw(
@@ -107,10 +99,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				}
 			}()
 
-			c.Request.Body = &gzipReader{
-				zr:         zr,
-				ReadCloser: c.Request.Body,
-			}
+			c.Request.Body = io.NopCloser(zr)
 		}
 
 		c.Next()
