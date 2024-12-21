@@ -23,7 +23,7 @@ type gzipWriter struct {
 func (w *gzipWriter) Write(b []byte) (int, error) {
 	n, err := w.zw.Write(b)
 	if err != nil {
-		return n, fmt.Errorf("failed to write compressed data: %w", err)
+		return 0, fmt.Errorf("failed to write compressed data: %w", err)
 	}
 	return n, nil
 }
@@ -42,10 +42,18 @@ type gzipReader struct {
 }
 
 func (r *gzipReader) Read(b []byte) (int, error) {
+	if len(b) == 0 {
+		return 0, fmt.Errorf("buffer is empty")
+	}
+
 	n, err := r.zr.Read(b)
 	if err != nil {
+		if err == io.EOF {
+			return n, err
+		}
 		return n, fmt.Errorf("failed to read compressed data: %w", err)
 	}
+
 	return n, nil
 }
 
