@@ -21,11 +21,19 @@ type gzipWriter struct {
 }
 
 func (w *gzipWriter) Write(b []byte) (int, error) {
-	return w.zw.Write(b)
+	n, err := w.zw.Write(b)
+	if err != nil {
+		return n, fmt.Errorf("failed to write compressed data: %w", err)
+	}
+	return n, nil
 }
 
 func (w *gzipWriter) Close() error {
-	return w.zw.Close()
+	err := w.zw.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close compressed data: %w", err)
+	}
+	return nil
 }
 
 type gzipReader struct {
@@ -34,12 +42,24 @@ type gzipReader struct {
 }
 
 func (r *gzipReader) Read(b []byte) (int, error) {
-	return r.zr.Read(b)
+	n, err := r.zr.Read(b)
+	if err != nil {
+		return n, fmt.Errorf("failed to read compressed data: %w", err)
+	}
+	return n, nil
 }
 
 func (r *gzipReader) Close() error {
-	return r.zr.Close()
+	err := r.zr.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close compressed data: %w", err)
+	}
+	return nil
 }
+
+const (
+	logKeyError = "error"
+)
 
 func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -58,7 +78,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware write close failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 			}()
@@ -76,14 +96,14 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 			if err != nil {
 				sugar.Errorw(
 					"gzip middleware reader failed",
-					"error", err.Error(),
+					logKeyError, err.Error(),
 				)
 				c.Writer.WriteHeader(http.StatusBadRequest)
 				_, err = c.Writer.WriteString(http.StatusText(http.StatusBadRequest))
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware write failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 				c.Abort()
@@ -94,7 +114,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware reader close failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 			}()
