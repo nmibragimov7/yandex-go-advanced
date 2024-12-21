@@ -41,21 +41,6 @@ func (r *gzipReader) Close() error {
 	return r.zr.Close()
 }
 
-type loggerWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
-
-func (w *loggerWriter) Write(data []byte) (int, error) {
-	w.body.Write(data)
-
-	n, err := w.ResponseWriter.Write(data)
-	if err != nil {
-		return n, fmt.Errorf("response writer error: %w", err)
-	}
-	return n, nil
-}
-
 func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sugar := sgr.Get()
@@ -122,6 +107,21 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+type loggerWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *loggerWriter) Write(data []byte) (int, error) {
+	w.body.Write(data)
+
+	n, err := w.ResponseWriter.Write(data)
+	if err != nil {
+		return n, fmt.Errorf("response writer error: %w", err)
+	}
+	return n, nil
 }
 
 func (p *Provider) LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {
