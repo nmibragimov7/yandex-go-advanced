@@ -36,34 +36,9 @@ func (w *gzipWriter) Close() error {
 	return nil
 }
 
-//type gzipReader struct {
-//	io.Reader
-//	zr *gzip.Reader
-//}
-//
-//func (r *gzipReader) Read(b []byte) (int, error) {
-//	if len(b) == 0 {
-//		return 0, nil
-//	}
-//
-//	n, err := r.zr.Read(b)
-//	if err != nil {
-//		if err == io.EOF {
-//			return n, nil
-//		}
-//		return n, fmt.Errorf("failed to read compressed data: %w", err)
-//	}
-//
-//	return n, nil
-//}
-//
-//func (r *gzipReader) Close() error {
-//	err := r.zr.Close()
-//	if err != nil {
-//		return fmt.Errorf("failed to close compressed data: %w", err)
-//	}
-//	return nil
-//}
+const (
+	logKeyError = "error"
+)
 
 func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -82,7 +57,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware write close failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 			}()
@@ -100,14 +75,14 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 			if err != nil {
 				sugar.Errorw(
 					"gzip middleware reader failed",
-					"error", err.Error(),
+					logKeyError, err.Error(),
 				)
 				c.Writer.WriteHeader(http.StatusBadRequest)
 				_, err = c.Writer.WriteString(http.StatusText(http.StatusBadRequest))
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware write failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 				c.Abort()
@@ -118,15 +93,11 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 				if err != nil {
 					sugar.Errorw(
 						"gzip middleware reader close failed",
-						"error", err.Error(),
+						logKeyError, err.Error(),
 					)
 				}
 			}()
 
-			//c.Request.Body = &gzipReader{
-			//	Reader: zr,
-			//	zr:     zr,
-			//}
 			c.Request.Body = io.NopCloser(zr)
 		}
 
