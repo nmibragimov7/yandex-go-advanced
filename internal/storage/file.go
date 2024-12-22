@@ -66,7 +66,7 @@ func (f *FileStorage) Close() error {
 }
 
 func NewFileStorage(path string) (*FileStorage, error) {
-	file, err := os.OpenFile(path+"/"+"storage.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+	file, err := os.OpenFile(path+"/"+"storage.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
