@@ -61,14 +61,30 @@ func TestMainPage(t *testing.T) {
 	}
 
 	conf := config.Init()
-	store := storage.NewStore()
-	sugar := logger.InitLogger()
+	sgr := logger.InitLogger()
 	mp := &middleware.Provider{}
 	hp := &Provider{}
+	str, err := storage.NewFileStorage(*conf.FilePath)
+	sugar := sgr.Get()
+	if err != nil {
+		sugar.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sugar.Errorw(
+				"",
+				"error", err.Error(),
+			)
+		}
+	}()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, store, sugar, mp, hp))
+			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
 			defer ts.Close()
 
 			headers := map[string]string{}
@@ -115,14 +131,30 @@ func TestIdPage(t *testing.T) {
 	}
 
 	conf := config.Init()
-	store := storage.NewStore()
-	sugar := logger.InitLogger()
+	sgr := logger.InitLogger()
 	mp := &middleware.Provider{}
 	hp := &Provider{}
+	str, err := storage.NewFileStorage(*conf.FilePath)
+	sugar := sgr.Get()
+	if err != nil {
+		sugar.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sugar.Errorw(
+				"",
+				"error", err.Error(),
+			)
+		}
+	}()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, store, sugar, mp, hp))
+			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
 			defer ts.Close()
 
 			headers := map[string]string{}
@@ -185,14 +217,30 @@ func TestShortenHandler(t *testing.T) {
 	}
 
 	conf := config.Init()
-	store := storage.NewStore()
-	sugar := logger.InitLogger()
+	sgr := logger.InitLogger()
 	mp := &middleware.Provider{}
 	hp := &Provider{}
+	str, err := storage.NewFileStorage(*conf.FilePath)
+	sugar := sgr.Get()
+	if err != nil {
+		sugar.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sugar.Errorw(
+				"",
+				"error", err.Error(),
+			)
+		}
+	}()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, store, sugar, mp, hp))
+			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
 			defer ts.Close()
 
 			bts, err := json.Marshal(test.body)
