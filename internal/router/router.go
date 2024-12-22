@@ -11,7 +11,7 @@ import (
 
 func Router(
 	cnf *config.Config,
-	str *storage.Store,
+	str *storage.FileStorage,
 	sgr *logger.Logger,
 	mp common.Middleware,
 	hp common.Handler,

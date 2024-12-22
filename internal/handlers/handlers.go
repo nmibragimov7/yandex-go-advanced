@@ -54,7 +54,7 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
 	c.JSON(http.StatusInternalServerError, message)
 }
 
-func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger) {
 	sugar := sgr.Get()
 
 	if c.Request.Method != http.MethodPost {
@@ -93,7 +93,55 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Sto
 	url := string(body)
 	key := util.GetKey()
 
-	str.SaveStore(key, url)
+	result, err := str.ReadRecord()
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	uuid := 1
+	if result != nil {
+		uuid = result.UUID + 1
+	}
+
+	record := &models.ShortenRecord{
+		UUID:        uuid,
+		ShortURL:    key,
+		OriginalURL: url,
+	}
+	err = str.WriteRecord(record)
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
 
 	configs := cnf.GetConfig()
 
@@ -111,7 +159,7 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Sto
 	}
 }
 
-func (p *Provider) IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.Logger) {
 	sugar := sgr.Get()
 
 	if c.Request.Method != http.MethodGet {
@@ -141,7 +189,7 @@ func (p *Provider) IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger
 		return
 	}
 
-	value := str.Get(path)
+	value := str.GetByKey(path)
 
 	if value == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
@@ -160,7 +208,9 @@ func (p *Provider) IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger
 	c.Redirect(http.StatusTemporaryRedirect, value)
 }
 
-func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger) {
+func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger) {
+	sugar := sgr.Get()
+
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
@@ -183,7 +233,57 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 	}
 
 	key := util.GetKey()
-	str.SaveStore(key, body.URL)
+
+	result, err := str.ReadRecord()
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	uuid := 1
+	if result != nil {
+		uuid = result.UUID + 1
+	}
+
+	record := &models.ShortenRecord{
+		UUID:        uuid,
+		ShortURL:    key,
+		OriginalURL: body.URL,
+	}
+	err = str.WriteRecord(record)
+	if err != nil {
+		sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
 	configs := cnf.GetConfig()
 
 	response := models.ShortenResponse{

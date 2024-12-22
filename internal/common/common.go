@@ -14,7 +14,7 @@ type Middleware interface {
 }
 
 type Handler interface {
-	MainPage(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger)
-	IDPage(c *gin.Context, str *storage.Store, sgr *logger.Logger)
-	ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.Store, sgr *logger.Logger)
+	MainPage(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger)
+	IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.Logger)
+	ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger)
 }

@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	Server  *string
-	BaseURL *string
+	Server   *string
+	BaseURL  *string
+	FilePath *string
 }
 
 func (c *Config) GetConfig() *Config {
@@ -17,14 +18,16 @@ func (c *Config) GetConfig() *Config {
 
 func Init() *Config {
 	instance := Config{
-		Server:  nil,
-		BaseURL: nil,
+		Server:   nil,
+		BaseURL:  nil,
+		FilePath: nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
 
 	instance.Server = flags.String("a", ":8080", "Server URL")
 	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
+	instance.FilePath = flags.String("f", "./", "File path")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -36,6 +39,9 @@ func Init() *Config {
 	}
 	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
 		instance.BaseURL = &envBaseURL
+	}
+	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
+		instance.FilePath = &envFileStoragePath
 	}
 
 	return &instance
