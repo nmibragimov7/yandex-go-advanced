@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 type Config struct {
@@ -27,7 +28,7 @@ func Init() *Config {
 
 	instance.Server = flags.String("a", ":8080", "Server URL")
 	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
-	instance.FilePath = flags.String("f", "./", "File path")
+	filePath := flags.String("f", "./", "File path")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -41,8 +42,15 @@ func Init() *Config {
 		instance.BaseURL = &envBaseURL
 	}
 	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
-		instance.FilePath = &envFileStoragePath
+		filePath = &envFileStoragePath
 	}
+
+	absPath, err := filepath.Abs(*filePath)
+	if err != nil {
+		log.Fatalf("Failed to get absolute path: %v", err)
+	}
+
+	instance.FilePath = &absPath
 
 	return &instance
 }
