@@ -3,7 +3,6 @@ package storage
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"yandex-go-advanced/internal/models"
@@ -24,7 +23,11 @@ func (f *FileStorage) WriteRecord(record *models.ShortenRecord) error {
 		return fmt.Errorf("failed to marshal record: %w", err)
 	}
 	_, err = f.file.Write(append(data, '\n'))
-	return fmt.Errorf("failed to write record to file: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to write record to file: %w", err)
+	}
+
+	return nil
 }
 
 func (f *FileStorage) ReadRecord() (*models.ShortenRecord, error) {
@@ -49,18 +52,21 @@ func (f *FileStorage) ReadRecord() (*models.ShortenRecord, error) {
 	}
 
 	if len(records) == 0 {
-		return nil, errors.New("no records found")
+		return &models.ShortenRecord{}, nil
 	}
 
 	return records[len(records)-1], nil
 }
 
 func (f *FileStorage) Close() error {
-	return f.file.Close()
+	if err := f.file.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %w", err)
+	}
+	return nil
 }
 
 func NewFileStorage(path string) (*FileStorage, error) {
-	file, err := os.OpenFile(path+"/"+"storage.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(path+"/"+"storage.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
