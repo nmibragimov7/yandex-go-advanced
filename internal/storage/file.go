@@ -16,8 +16,6 @@ type FileStorage struct {
 }
 
 func (f *FileStorage) WriteRecord(record *models.ShortenRecord) error {
-	f.Save(record.ShortURL, record.OriginalURL)
-
 	data, err := json.Marshal(record)
 	if err != nil {
 		return fmt.Errorf("failed to marshal record: %w", err)
@@ -26,36 +24,9 @@ func (f *FileStorage) WriteRecord(record *models.ShortenRecord) error {
 	if err != nil {
 		return fmt.Errorf("failed to write record to file: %w", err)
 	}
+	f.save(record.ShortURL, record.OriginalURL)
 
 	return nil
-}
-
-func (f *FileStorage) ReadRecord() (*models.ShortenRecord, error) {
-	_, err := f.file.Seek(0, 0)
-	if err != nil {
-		return nil, fmt.Errorf("failed to seek file to the beginning: %w", err)
-	}
-
-	scanner := bufio.NewScanner(f.file)
-	var records []*models.ShortenRecord
-
-	for scanner.Scan() {
-		var record models.ShortenRecord
-		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
-		}
-		records = append(records, &record)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scanner encountered an error: %w", err)
-	}
-
-	if len(records) == 0 {
-		return &models.ShortenRecord{}, nil
-	}
-
-	return records[len(records)-1], nil
 }
 
 func (f *FileStorage) Close() error {
@@ -76,7 +47,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
-	storage := NewStorage()
+	storage := newStorage()
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -84,7 +55,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
 		}
-		storage.Save(record.ShortURL, record.OriginalURL)
+		storage.save(record.ShortURL, record.OriginalURL)
 	}
 
 	if err := scanner.Err(); err != nil {

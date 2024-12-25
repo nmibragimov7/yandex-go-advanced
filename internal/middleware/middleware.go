@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"yandex-go-advanced/internal/logger"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-type Provider struct{}
+type GzipProvider struct{}
+type LoggerProvider struct{}
 
 type gzipWriter struct {
 	gin.ResponseWriter
@@ -40,10 +41,8 @@ const (
 	logKeyError = "error"
 )
 
-func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
+func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sugar := sgr.Get()
-
 		contentType := c.Request.Header.Get("Content-Type")
 		supportsJSON := strings.Contains(contentType, "application/json")
 		supportsHTML := strings.Contains(contentType, "text/html")
@@ -56,7 +55,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 			defer func() {
 				err := zw.Close()
 				if err != nil {
-					sugar.Errorw(
+					sgr.Errorw(
 						"gzip middleware write close failed",
 						logKeyError, err.Error(),
 					)
@@ -74,14 +73,14 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 		if sendsGzip {
 			zr, err := gzip.NewReader(c.Request.Body)
 			if err != nil {
-				sugar.Errorw(
+				sgr.Errorw(
 					"gzip middleware reader failed",
 					logKeyError, err.Error(),
 				)
 				c.Writer.WriteHeader(http.StatusBadRequest)
 				_, err = c.Writer.WriteString(http.StatusText(http.StatusBadRequest))
 				if err != nil {
-					sugar.Errorw(
+					sgr.Errorw(
 						"gzip middleware write failed",
 						logKeyError, err.Error(),
 					)
@@ -92,7 +91,7 @@ func (p *Provider) GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 			defer func() {
 				err := zr.Close()
 				if err != nil {
-					sugar.Errorw(
+					sgr.Errorw(
 						"gzip middleware reader close failed",
 						logKeyError, err.Error(),
 					)
@@ -121,7 +120,7 @@ func (w *loggerWriter) Write(data []byte) (int, error) {
 	return n, nil
 }
 
-func (p *Provider) LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {
+func (p *LoggerProvider) LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		uri := c.Request.RequestURI
@@ -139,8 +138,7 @@ func (p *Provider) LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc {
 		size := c.Writer.Size()
 		duration := time.Since(start)
 
-		sugar := sgr.Get()
-		sugar.Infow(
+		sgr.Infow(
 			"request handler log",
 			"uri", uri,
 			"method", method,

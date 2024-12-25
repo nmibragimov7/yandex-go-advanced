@@ -6,15 +6,19 @@ import (
 	"net/http"
 	"strconv"
 	"yandex-go-advanced/internal/config"
-	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-type Provider struct{}
+type HandlerProvider struct {
+	Config  *config.Config
+	Storage *storage.FileStorage
+	Sugar   *zap.SugaredLogger
+}
 
 const (
 	logKeyError     = "error"
@@ -25,10 +29,8 @@ const (
 	applicationJSON = "application/json"
 )
 
-func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
-	sugar := sgr.Get()
-
-	sugar.Error(
+func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
+	sgr.Error(
 		logKeyError, err.Error(),
 		logKeyURI, c.Request.URL.Path,
 		logKeyIP, c.ClientIP(),
@@ -40,7 +42,7 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
 
 	bytes, err := json.Marshal(message)
 	if err != nil {
-		sugar.Error(
+		sgr.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
@@ -54,14 +56,12 @@ func sendErrorResponse(c *gin.Context, sgr *logger.Logger, err error) {
 	c.JSON(http.StatusInternalServerError, message)
 }
 
-func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger) {
-	sugar := sgr.Get()
-
+func (p *HandlerProvider) MainPage(c *gin.Context) {
 	if c.Request.Method != http.MethodPost {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -72,7 +72,7 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		sugar.Error(
+		p.Sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
@@ -81,7 +81,7 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -93,39 +93,17 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 	url := string(body)
 	key := util.GetKey()
 
-	result, err := str.ReadRecord()
-	if err != nil {
-		sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
-		if err != nil {
-			sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
-		}
-		return
-	}
-
-	uuid := 1
-	if result != nil {
-		uuid = result.UUID + 1
-	}
+	str := p.Storage.Get()
+	uuid := len(str) + 1
 
 	record := &models.ShortenRecord{
 		UUID:        uuid,
 		ShortURL:    key,
 		OriginalURL: url,
 	}
-	err = str.WriteRecord(record)
+	err = p.Storage.WriteRecord(record)
 	if err != nil {
-		sugar.Error(
+		p.Sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
@@ -134,7 +112,7 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -143,14 +121,14 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 		return
 	}
 
-	configs := cnf.GetConfig()
+	configs := p.Config.GetConfig()
 
 	c.Writer.WriteHeader(http.StatusCreated)
 	c.Header(contentType, "text/plain")
 	c.Header(contentLength, strconv.Itoa(len(*configs.BaseURL+"/"+key)))
 	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
 	if err != nil {
-		sugar.Error(
+		p.Sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
@@ -159,14 +137,12 @@ func (p *Provider) MainPage(c *gin.Context, cnf *config.Config, str *storage.Fil
 	}
 }
 
-func (p *Provider) IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.Logger) {
-	sugar := sgr.Get()
-
+func (p *HandlerProvider) IDPage(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -180,7 +156,7 @@ func (p *Provider) IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -189,13 +165,13 @@ func (p *Provider) IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.
 		return
 	}
 
-	value := str.GetByKey(path)
+	value := p.Storage.GetByKey(path)
 
 	if value == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -208,17 +184,15 @@ func (p *Provider) IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.
 	c.Redirect(http.StatusTemporaryRedirect, value)
 }
 
-func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger) {
-	sugar := sgr.Get()
-
+func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
-		sendErrorResponse(c, sgr, err)
+		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
 	if err := json.Unmarshal(bytes, &body); err != nil {
-		sendErrorResponse(c, sgr, err)
+		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
 
@@ -234,39 +208,17 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 
 	key := util.GetKey()
 
-	result, err := str.ReadRecord()
-	if err != nil {
-		sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
-		if err != nil {
-			sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
-		}
-		return
-	}
-
-	uuid := 1
-	if result != nil {
-		uuid = result.UUID + 1
-	}
+	str := p.Storage.Get()
+	uuid := len(str) + 1
 
 	record := &models.ShortenRecord{
 		UUID:        uuid,
 		ShortURL:    key,
 		OriginalURL: body.URL,
 	}
-	err = str.WriteRecord(record)
+	err = p.Storage.WriteRecord(record)
 	if err != nil {
-		sugar.Error(
+		p.Sugar.Error(
 			logKeyError, err.Error(),
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
@@ -275,7 +227,7 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			sugar.Error(
+			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -284,7 +236,7 @@ func (p *Provider) ShortenHandler(c *gin.Context, cnf *config.Config, str *stora
 		return
 	}
 
-	configs := cnf.GetConfig()
+	configs := p.Config.GetConfig()
 
 	response := models.ShortenResponse{
 		Result: *configs.BaseURL + "/" + key,

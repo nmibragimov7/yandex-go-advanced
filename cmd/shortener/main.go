@@ -13,26 +13,39 @@ import (
 func main() {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	mp := &middleware.Provider{}
-	hp := &handlers.Provider{}
+	gzp := &middleware.GzipProvider{}
+	lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
-
-	sugar := sgr.Get()
 	if err != nil {
-		sugar.Errorw(
+		sgr.Errorw(
 			"",
 			"error", err.Error(),
 		)
 	}
+	hdp := &handlers.HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
+
 	defer func() {
 		err := str.Close()
 		if err != nil {
-			sugar.Errorw(
+			sgr.Errorw(
 				"",
 				"error", err.Error(),
 			)
 		}
 	}()
 
-	sugar.Fatal(http.ListenAndServe(*cnf.Server, router.Router(cnf, str, sgr, mp, hp)))
+	rtr := router.Provider{
+		Config:           cnf,
+		Storage:          str,
+		Sugar:            sgr,
+		GzipMiddleware:   gzp,
+		LoggerMiddleWare: lgp,
+		Handler:          hdp,
+	}
+
+	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))
 }

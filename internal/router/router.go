@@ -3,32 +3,34 @@ package router
 import (
 	"yandex-go-advanced/internal/common"
 	"yandex-go-advanced/internal/config"
-	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/storage"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-func Router(
-	cnf *config.Config,
-	str *storage.FileStorage,
-	sgr *logger.Logger,
-	mp common.Middleware,
-	hp common.Handler,
-) *gin.Engine {
-	r := gin.Default()
+type Provider struct {
+	Config           *config.Config
+	Storage          *storage.FileStorage
+	Sugar            *zap.SugaredLogger
+	GzipMiddleware   common.GzipMiddleware
+	LoggerMiddleWare common.LoggerMiddleware
+	Handler          common.Handler
+}
 
-	r.Use(mp.GzipMiddleware(sgr))
-	r.Use(mp.LoggerMiddleware(sgr))
-	r.POST("/", func(c *gin.Context) {
-		hp.MainPage(c, cnf, str, sgr)
-	})
-	r.POST("/api/shorten", func(c *gin.Context) {
-		hp.ShortenHandler(c, cnf, str, sgr)
-	})
-	r.GET("/:id", func(c *gin.Context) {
-		hp.IDPage(c, str, sgr)
-	})
+func (p *Provider) Router() *gin.Engine {
+	r := gin.Default()
+	sugarWithCtx := p.Sugar.With(
+		"app", "shortener",
+		"service", "main",
+	)
+
+	r.Use(p.GzipMiddleware.GzipMiddleware(sugarWithCtx))
+	r.Use(p.LoggerMiddleWare.LoggerMiddleware(sugarWithCtx))
+
+	r.POST("/", p.Handler.MainPage)
+	r.POST("/api/shorten", p.Handler.ShortenHandler)
+	r.GET("/:id", p.Handler.IDPage)
 
 	return r
 }

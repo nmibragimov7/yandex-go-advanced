@@ -60,31 +60,45 @@ func TestMainPage(t *testing.T) {
 		},
 	}
 
-	conf := config.Init()
+	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	mp := &middleware.Provider{}
-	hp := &Provider{}
-	str, err := storage.NewFileStorage(*conf.FilePath)
-	sugar := sgr.Get()
+	gzp := &middleware.GzipProvider{}
+	lgp := &middleware.LoggerProvider{}
+	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
-		sugar.Errorw(
+		sgr.Errorw(
 			"",
 			"error", err.Error(),
 		)
 	}
+	hdp := &HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
+
 	defer func() {
 		err := str.Close()
 		if err != nil {
-			sugar.Errorw(
+			sgr.Errorw(
 				"",
 				"error", err.Error(),
 			)
 		}
 	}()
 
+	rtr := router.Provider{
+		Config:           cnf,
+		Storage:          str,
+		Sugar:            sgr,
+		GzipMiddleware:   gzp,
+		LoggerMiddleWare: lgp,
+		Handler:          hdp,
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
+			ts := httptest.NewServer(rtr.Router())
 			defer ts.Close()
 
 			headers := map[string]string{}
@@ -130,31 +144,45 @@ func TestIdPage(t *testing.T) {
 		},
 	}
 
-	conf := config.Init()
+	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	mp := &middleware.Provider{}
-	hp := &Provider{}
-	str, err := storage.NewFileStorage(*conf.FilePath)
-	sugar := sgr.Get()
+	gzp := &middleware.GzipProvider{}
+	lgp := &middleware.LoggerProvider{}
+	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
-		sugar.Errorw(
+		sgr.Errorw(
 			"",
 			"error", err.Error(),
 		)
 	}
+	hdp := &HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
+
 	defer func() {
 		err := str.Close()
 		if err != nil {
-			sugar.Errorw(
+			sgr.Errorw(
 				"",
 				"error", err.Error(),
 			)
 		}
 	}()
 
+	rtr := router.Provider{
+		Config:           cnf,
+		Storage:          str,
+		Sugar:            sgr,
+		GzipMiddleware:   gzp,
+		LoggerMiddleWare: lgp,
+		Handler:          hdp,
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
+			ts := httptest.NewServer(rtr.Router())
 			defer ts.Close()
 
 			headers := map[string]string{}
@@ -216,31 +244,45 @@ func TestShortenHandler(t *testing.T) {
 		},
 	}
 
-	conf := config.Init()
+	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	mp := &middleware.Provider{}
-	hp := &Provider{}
-	str, err := storage.NewFileStorage(*conf.FilePath)
-	sugar := sgr.Get()
+	gzp := &middleware.GzipProvider{}
+	lgp := &middleware.LoggerProvider{}
+	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
-		sugar.Errorw(
+		sgr.Errorw(
 			"",
 			"error", err.Error(),
 		)
 	}
+	hdp := &HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
+
 	defer func() {
 		err := str.Close()
 		if err != nil {
-			sugar.Errorw(
+			sgr.Errorw(
 				"",
 				"error", err.Error(),
 			)
 		}
 	}()
 
+	rtr := router.Provider{
+		Config:           cnf,
+		Storage:          str,
+		Sugar:            sgr,
+		GzipMiddleware:   gzp,
+		LoggerMiddleWare: lgp,
+		Handler:          hdp,
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
+			ts := httptest.NewServer(rtr.Router())
 			defer ts.Close()
 
 			bts, err := json.Marshal(test.body)

@@ -1,20 +1,20 @@
 package common
 
 import (
-	"yandex-go-advanced/internal/config"
-	"yandex-go-advanced/internal/logger"
-	"yandex-go-advanced/internal/storage"
-
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-type Middleware interface {
-	GzipMiddleware(sgr *logger.Logger) gin.HandlerFunc
-	LoggerMiddleware(sgr *logger.Logger) gin.HandlerFunc
+type GzipMiddleware interface {
+	GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc
+}
+
+type LoggerMiddleware interface {
+	LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc
 }
 
 type Handler interface {
-	MainPage(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger)
-	IDPage(c *gin.Context, str *storage.FileStorage, sgr *logger.Logger)
-	ShortenHandler(c *gin.Context, cnf *config.Config, str *storage.FileStorage, sgr *logger.Logger)
+	MainPage(c *gin.Context)
+	IDPage(c *gin.Context)
+	ShortenHandler(c *gin.Context)
 }

@@ -6,15 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type Logger struct {
-	sugar *zap.SugaredLogger
-}
-
-func (l *Logger) Get() *zap.SugaredLogger {
-	return l.sugar
-}
-
-func InitLogger() *Logger {
+func InitLogger() *zap.SugaredLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Printf("Zap NewDevelopment: %s", err.Error())
@@ -26,7 +18,5 @@ func InitLogger() *Logger {
 		}
 	}()
 
-	return &Logger{
-		sugar: logger.Sugar(),
-	}
+	return logger.Sugar()
 }

@@ -22,27 +22,41 @@ import (
 )
 
 func TestGzipMiddleware(t *testing.T) {
-	conf := config.Init()
+	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	mp := &Provider{}
-	hp := &handlers.Provider{}
-	str, err := storage.NewFileStorage(*conf.FilePath)
-	sugar := sgr.Get()
+	gzp := &GzipProvider{}
+	lgp := &LoggerProvider{}
+	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
-		sugar.Errorw(
+		sgr.Errorw(
 			"",
 			"error", err.Error(),
 		)
 	}
+	hdp := &handlers.HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
+
 	defer func() {
 		err := str.Close()
 		if err != nil {
-			sugar.Errorw(
+			sgr.Errorw(
 				"",
 				"error", err.Error(),
 			)
 		}
 	}()
+
+	rtr := router.Provider{
+		Config:           cnf,
+		Storage:          str,
+		Sugar:            sgr,
+		GzipMiddleware:   gzp,
+		LoggerMiddleWare: lgp,
+		Handler:          hdp,
+	}
 
 	type wantShorten struct {
 		code            int
@@ -94,7 +108,7 @@ func TestGzipMiddleware(t *testing.T) {
 
 	for _, test := range testsShorten {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
+			ts := httptest.NewServer(rtr.Router())
 			defer ts.Close()
 
 			bts, err := json.Marshal(test.body)
@@ -153,7 +167,7 @@ func TestGzipMiddleware(t *testing.T) {
 
 	for _, test := range testsID {
 		t.Run(test.name, func(t *testing.T) {
-			ts := httptest.NewServer(router.Router(conf, str, sgr, mp, hp))
+			ts := httptest.NewServer(rtr.Router())
 			defer ts.Close()
 
 			headers := map[string]string{}
