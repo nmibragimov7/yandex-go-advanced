@@ -56,7 +56,7 @@ func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, erro
 			logKeyError, err.Error(),
 		)
 
-		return nil, err
+		return nil, fmt.Errorf("failed to ungzip request body: %w", err)
 	}
 
 	return zr, nil
@@ -133,70 +133,6 @@ func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-//func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		contentType := c.Request.Header.Get("Content-Type")
-//		supportsJSON := strings.Contains(contentType, "application/json")
-//		supportsHTML := strings.Contains(contentType, "text/html")
-//
-//		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
-//		supportsGzip := strings.Contains(acceptEncoding, "gzip")
-//
-//		if supportsGzip && (supportsJSON || supportsHTML) {
-//			zw := gzip.NewWriter(c.Writer)
-//			defer func() {
-//				err := zw.Close()
-//				if err != nil {
-//					sgr.Errorw(
-//						"gzip middleware write close failed",
-//						logKeyError, err.Error(),
-//					)
-//				}
-//			}()
-//			c.Writer = &GzipWriter{
-//				ResponseWriter: c.Writer,
-//				zw:             zw,
-//			}
-//			c.Writer.Header().Set("Content-Encoding", "gzip")
-//		}
-//
-//		contentEncoding := c.Request.Header.Get("Content-Encoding")
-//		sendsGzip := strings.Contains(contentEncoding, "gzip")
-//		if sendsGzip {
-//			zr, err := gzip.NewReader(c.Request.Body)
-//			if err != nil {
-//				sgr.Errorw(
-//					"gzip middleware reader failed",
-//					logKeyError, err.Error(),
-//				)
-//				c.Writer.WriteHeader(http.StatusBadRequest)
-//				_, err = c.Writer.WriteString(http.StatusText(http.StatusBadRequest))
-//				if err != nil {
-//					sgr.Errorw(
-//						"gzip middleware write failed",
-//						logKeyError, err.Error(),
-//					)
-//				}
-//				c.Abort()
-//				return
-//			}
-//			defer func() {
-//				err := zr.Close()
-//				if err != nil {
-//					sgr.Errorw(
-//						"gzip middleware reader close failed",
-//						logKeyError, err.Error(),
-//					)
-//				}
-//			}()
-//
-//			c.Request.Body = io.NopCloser(zr)
-//		}
-//
-//		c.Next()
-//	}
-//}
 
 type loggerWriter struct {
 	gin.ResponseWriter

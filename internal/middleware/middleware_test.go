@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -16,11 +17,14 @@ type readCloser struct {
 }
 
 func (rc *readCloser) Read(p []byte) (int, error) {
-	return rc.reader.Read(p)
+	n, err := rc.reader.Read(p)
+	if err != nil {
+		return n, fmt.Errorf("failed to read: %w", err)
+	}
+	return n, nil
 }
 
 func (rc *readCloser) Close() error {
-	// Ничего не делает, так как bytes.Reader не требует явного закрытия
 	return nil
 }
 
