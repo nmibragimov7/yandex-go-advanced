@@ -10,7 +10,6 @@ import (
 	"testing"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/logger"
-	"yandex-go-advanced/internal/middleware"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/router"
 	"yandex-go-advanced/internal/storage"
@@ -62,8 +61,6 @@ func TestMainPage(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	gzp := &middleware.GzipProvider{}
-	lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
@@ -88,12 +85,10 @@ func TestMainPage(t *testing.T) {
 	}()
 
 	rtr := router.Provider{
-		Config:           cnf,
-		Storage:          str,
-		Sugar:            sgr,
-		GzipMiddleware:   gzp,
-		LoggerMiddleWare: lgp,
-		Handler:          hdp,
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+		Handler: hdp,
 	}
 
 	for _, test := range tests {
@@ -146,8 +141,6 @@ func TestIdPage(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	gzp := &middleware.GzipProvider{}
-	lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
@@ -172,12 +165,10 @@ func TestIdPage(t *testing.T) {
 	}()
 
 	rtr := router.Provider{
-		Config:           cnf,
-		Storage:          str,
-		Sugar:            sgr,
-		GzipMiddleware:   gzp,
-		LoggerMiddleWare: lgp,
-		Handler:          hdp,
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+		Handler: hdp,
 	}
 
 	for _, test := range tests {
@@ -246,8 +237,6 @@ func TestShortenHandler(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	gzp := &middleware.GzipProvider{}
-	lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
@@ -272,12 +261,10 @@ func TestShortenHandler(t *testing.T) {
 	}()
 
 	rtr := router.Provider{
-		Config:           cnf,
-		Storage:          str,
-		Sugar:            sgr,
-		GzipMiddleware:   gzp,
-		LoggerMiddleWare: lgp,
-		Handler:          hdp,
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+		Handler: hdp,
 	}
 
 	for _, test := range tests {

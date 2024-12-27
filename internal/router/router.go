@@ -3,6 +3,7 @@ package router
 import (
 	"yandex-go-advanced/internal/common"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/middleware"
 	"yandex-go-advanced/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,17 @@ import (
 )
 
 type Provider struct {
-	Config           *config.Config
-	Storage          *storage.FileStorage
-	Sugar            *zap.SugaredLogger
-	GzipMiddleware   common.GzipMiddleware
-	LoggerMiddleWare common.LoggerMiddleware
-	Handler          common.Handler
+	Config  *config.Config
+	Storage *storage.FileStorage
+	Sugar   *zap.SugaredLogger
+	//GzipMiddleware   *middleware.GzipProvider
+	//LoggerMiddleWare common.LoggerMiddleware
+	Handler common.Handler
 }
+
+const (
+	logKeyError = "error"
+)
 
 func (p *Provider) Router() *gin.Engine {
 	r := gin.Default()
@@ -25,8 +30,9 @@ func (p *Provider) Router() *gin.Engine {
 		"service", "main",
 	)
 
-	r.Use(p.GzipMiddleware.GzipMiddleware(sugarWithCtx))
-	r.Use(p.LoggerMiddleWare.LoggerMiddleware(sugarWithCtx))
+	r.Use(middleware.GzipMiddleware(sugarWithCtx))
+	//r.Use(p.GzipMiddleware.GzipMiddleware(sugarWithCtx))
+	r.Use(middleware.LoggerMiddleware(sugarWithCtx))
 
 	r.POST("/", p.Handler.MainPage)
 	r.POST("/api/shorten", p.Handler.ShortenHandler)

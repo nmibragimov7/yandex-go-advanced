@@ -5,7 +5,6 @@ import (
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/logger"
-	"yandex-go-advanced/internal/middleware"
 	"yandex-go-advanced/internal/router"
 	"yandex-go-advanced/internal/storage"
 )
@@ -13,8 +12,8 @@ import (
 func main() {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	gzp := &middleware.GzipProvider{}
-	lgp := &middleware.LoggerProvider{}
+	//gzp := &middleware.GzipProvider{}
+	//lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
@@ -39,12 +38,12 @@ func main() {
 	}()
 
 	rtr := router.Provider{
-		Config:           cnf,
-		Storage:          str,
-		Sugar:            sgr,
-		GzipMiddleware:   gzp,
-		LoggerMiddleWare: lgp,
-		Handler:          hdp,
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+		//GzipMiddleware:   gzp,
+		//LoggerMiddleWare: lgp,
+		Handler: hdp,
 	}
 
 	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))

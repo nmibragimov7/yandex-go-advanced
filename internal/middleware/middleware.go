@@ -13,8 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
-type GzipProvider struct{}
-type LoggerProvider struct{}
+type gzipProvider struct {
+	writer gin.ResponseWriter
+	reader io.ReadCloser
+}
 
 type gzipWriter struct {
 	gin.ResponseWriter
@@ -41,7 +43,26 @@ const (
 	logKeyError = "error"
 )
 
-func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
+func (p *gzipProvider) gzipHandler() *gzip.Writer {
+	zw := gzip.NewWriter(p.writer)
+	return zw
+}
+
+func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, error) {
+	zr, err := gzip.NewReader(p.reader)
+	if err != nil {
+		sgr.Errorw(
+			"gzip middleware reader failed",
+			logKeyError, err.Error(),
+		)
+
+		return nil, err
+	}
+
+	return zr, nil
+}
+
+func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		contentType := c.Request.Header.Get("Content-Type")
 		supportsJSON := strings.Contains(contentType, "application/json")
@@ -51,7 +72,10 @@ func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 
 		if supportsGzip && (supportsJSON || supportsHTML) {
-			zw := gzip.NewWriter(c.Writer)
+			p := gzipProvider{
+				writer: c.Writer,
+			}
+			zw := p.gzipHandler()
 			defer func() {
 				err := zw.Close()
 				if err != nil {
@@ -61,8 +85,9 @@ func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 					)
 				}
 			}()
+
 			c.Writer = &gzipWriter{
-				ResponseWriter: c.Writer,
+				ResponseWriter: p.writer,
 				zw:             zw,
 			}
 			c.Writer.Header().Set("Content-Encoding", "gzip")
@@ -71,7 +96,20 @@ func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 		contentEncoding := c.Request.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
-			zr, err := gzip.NewReader(c.Request.Body)
+			p := gzipProvider{
+				reader: c.Request.Body,
+			}
+			zr, err := p.unGzipHandler(sgr)
+			defer func() {
+				err := zr.Close()
+				if err != nil {
+					sgr.Errorw(
+						"gzip middleware reader close failed",
+						logKeyError, err.Error(),
+					)
+				}
+			}()
+
 			if err != nil {
 				sgr.Errorw(
 					"gzip middleware reader failed",
@@ -88,15 +126,6 @@ func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			defer func() {
-				err := zr.Close()
-				if err != nil {
-					sgr.Errorw(
-						"gzip middleware reader close failed",
-						logKeyError, err.Error(),
-					)
-				}
-			}()
 
 			c.Request.Body = io.NopCloser(zr)
 		}
@@ -104,6 +133,70 @@ func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+//func (p *GzipProvider) GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		contentType := c.Request.Header.Get("Content-Type")
+//		supportsJSON := strings.Contains(contentType, "application/json")
+//		supportsHTML := strings.Contains(contentType, "text/html")
+//
+//		acceptEncoding := c.Request.Header.Get("Accept-Encoding")
+//		supportsGzip := strings.Contains(acceptEncoding, "gzip")
+//
+//		if supportsGzip && (supportsJSON || supportsHTML) {
+//			zw := gzip.NewWriter(c.Writer)
+//			defer func() {
+//				err := zw.Close()
+//				if err != nil {
+//					sgr.Errorw(
+//						"gzip middleware write close failed",
+//						logKeyError, err.Error(),
+//					)
+//				}
+//			}()
+//			c.Writer = &GzipWriter{
+//				ResponseWriter: c.Writer,
+//				zw:             zw,
+//			}
+//			c.Writer.Header().Set("Content-Encoding", "gzip")
+//		}
+//
+//		contentEncoding := c.Request.Header.Get("Content-Encoding")
+//		sendsGzip := strings.Contains(contentEncoding, "gzip")
+//		if sendsGzip {
+//			zr, err := gzip.NewReader(c.Request.Body)
+//			if err != nil {
+//				sgr.Errorw(
+//					"gzip middleware reader failed",
+//					logKeyError, err.Error(),
+//				)
+//				c.Writer.WriteHeader(http.StatusBadRequest)
+//				_, err = c.Writer.WriteString(http.StatusText(http.StatusBadRequest))
+//				if err != nil {
+//					sgr.Errorw(
+//						"gzip middleware write failed",
+//						logKeyError, err.Error(),
+//					)
+//				}
+//				c.Abort()
+//				return
+//			}
+//			defer func() {
+//				err := zr.Close()
+//				if err != nil {
+//					sgr.Errorw(
+//						"gzip middleware reader close failed",
+//						logKeyError, err.Error(),
+//					)
+//				}
+//			}()
+//
+//			c.Request.Body = io.NopCloser(zr)
+//		}
+//
+//		c.Next()
+//	}
+//}
 
 type loggerWriter struct {
 	gin.ResponseWriter
@@ -120,7 +213,7 @@ func (w *loggerWriter) Write(data []byte) (int, error) {
 	return n, nil
 }
 
-func (p *LoggerProvider) LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
+func LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		uri := c.Request.RequestURI
