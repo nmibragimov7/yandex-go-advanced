@@ -14,14 +14,8 @@ type Provider struct {
 	Config  *config.Config
 	Storage *storage.FileStorage
 	Sugar   *zap.SugaredLogger
-	//GzipMiddleware   *middleware.GzipProvider
-	//LoggerMiddleWare common.LoggerMiddleware
 	Handler common.Handler
 }
-
-const (
-	logKeyError = "error"
-)
 
 func (p *Provider) Router() *gin.Engine {
 	r := gin.Default()
@@ -31,7 +25,6 @@ func (p *Provider) Router() *gin.Engine {
 	)
 
 	r.Use(middleware.GzipMiddleware(sugarWithCtx))
-	//r.Use(p.GzipMiddleware.GzipMiddleware(sugarWithCtx))
 	r.Use(middleware.LoggerMiddleware(sugarWithCtx))
 
 	r.POST("/", p.Handler.MainPage)

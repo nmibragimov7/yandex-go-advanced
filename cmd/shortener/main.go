@@ -12,8 +12,6 @@ import (
 func main() {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	//gzp := &middleware.GzipProvider{}
-	//lgp := &middleware.LoggerProvider{}
 	str, err := storage.NewFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
@@ -41,8 +39,6 @@ func main() {
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
-		//GzipMiddleware:   gzp,
-		//LoggerMiddleWare: lgp,
 		Handler: hdp,
 	}
 
