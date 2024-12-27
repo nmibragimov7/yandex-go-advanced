@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"bytes"
-	"compress/gzip"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
+
+type readCloser struct {
+	reader io.Reader
+}
+
+func (rc *readCloser) Read(p []byte) (int, error) {
+	return rc.reader.Read(p)
+}
+
+func (rc *readCloser) Close() error {
+	// Ничего не делает, так как bytes.Reader не требует явного закрытия
+	return nil
+}
 
 func TestGzipMiddleware(t *testing.T) {
 	sgr := logger.InitLogger()
@@ -44,7 +56,12 @@ func TestGzipMiddleware(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.NotEqual(t, body, result)
 
-	zr, err := gzip.NewReader(bytes.NewReader(result))
+	provider = gzipProvider{
+		reader: &readCloser{
+			reader: bytes.NewReader(result),
+		},
+	}
+	zr, err := provider.unGzipHandler(sgr)
 	assert.NoError(t, err)
 	defer func() {
 		err := zr.Close()
