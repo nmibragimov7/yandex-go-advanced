@@ -21,7 +21,10 @@ func (rc *readCloser) Read(p []byte) (int, error) {
 	if err != nil && err != io.EOF {
 		return n, fmt.Errorf("failed to read: %w", err)
 	}
-	return n, err
+	if err == io.EOF {
+		return 0, err
+	}
+	return n, nil
 }
 
 func (rc *readCloser) Close() error {
