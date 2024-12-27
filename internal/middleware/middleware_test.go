@@ -18,10 +18,10 @@ type readCloser struct {
 
 func (rc *readCloser) Read(p []byte) (int, error) {
 	n, err := rc.reader.Read(p)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return n, fmt.Errorf("failed to read: %w", err)
 	}
-	return n, nil
+	return n, err
 }
 
 func (rc *readCloser) Close() error {
