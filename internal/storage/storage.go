@@ -4,27 +4,31 @@ import (
 	"sync"
 )
 
-type Store struct {
-	Store map[string]string
-	mtx   *sync.Mutex
+type Storage struct {
+	storage map[string]string
+	mtx     *sync.Mutex
 }
 
-func (s *Store) SaveStore(key, url string) {
+func (s *Storage) Get() map[string]string {
+	return s.storage
+}
+
+func (s *Storage) GetByKey(key string) string {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	return s.storage[key]
+}
+
+func (s *Storage) save(key, url string) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	s.Store[key] = url
+	s.storage[key] = url
 }
 
-func (s *Store) Get(key string) string {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	return s.Store[key]
-}
-
-func NewStore() *Store {
-	return &Store{
-		Store: make(map[string]string),
-		mtx:   &sync.Mutex{},
+func newStorage() *Storage {
+	return &Storage{
+		storage: make(map[string]string),
+		mtx:     &sync.Mutex{},
 	}
 }

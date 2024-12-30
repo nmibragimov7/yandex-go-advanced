@@ -1,16 +1,46 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
+	"yandex-go-advanced/internal/logger"
+	"yandex-go-advanced/internal/router"
 	"yandex-go-advanced/internal/storage"
 )
 
 func main() {
 	cnf := config.Init().GetConfig()
-	str := storage.NewStore()
+	sgr := logger.InitLogger()
+	str, err := storage.NewFileStorage(*cnf.FilePath)
+	if err != nil {
+		sgr.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
+	hdp := &handlers.HandlerProvider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+	}
 
-	log.Fatal(http.ListenAndServe(*cnf.Server, handlers.Router(cnf, str)))
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sgr.Errorw(
+				"",
+				"error", err.Error(),
+			)
+		}
+	}()
+
+	rtr := router.Provider{
+		Config:  cnf,
+		Storage: str,
+		Sugar:   sgr,
+		Handler: hdp,
+	}
+
+	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))
 }

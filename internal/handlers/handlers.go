@@ -1,50 +1,91 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-const errorText = "ERROR: failed to send response body: %v, Path: %s, IP: %s"
-
-func Router(cnf *config.Config, str *storage.Store) *gin.Engine {
-	r := gin.Default()
-
-	r.POST("/", func(c *gin.Context) {
-		MainPage(c, cnf, str)
-	})
-	r.GET("/:id", func(c *gin.Context) {
-		IDPage(c, str)
-	})
-
-	return r
+type HandlerProvider struct {
+	Config  *config.Config
+	Storage *storage.FileStorage
+	Sugar   *zap.SugaredLogger
 }
 
-func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store) {
+const (
+	logKeyError     = "error"
+	logKeyURI       = "uri"
+	logKeyIP        = "ip"
+	contentType     = "Content-Type"
+	contentLength   = "Content-Length"
+	applicationJSON = "application/json"
+)
+
+func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
+	sgr.Error(
+		logKeyError, err.Error(),
+		logKeyURI, c.Request.URL.Path,
+		logKeyIP, c.ClientIP(),
+	)
+
+	message := models.ShortenResponseError{
+		Message: http.StatusText(http.StatusInternalServerError),
+	}
+
+	bytes, err := json.Marshal(message)
+	if err != nil {
+		sgr.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+		return
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.Header(contentLength, strconv.Itoa(len(bytes)))
+
+	c.JSON(http.StatusInternalServerError, message)
+}
+
+func (p *HandlerProvider) MainPage(c *gin.Context) {
 	if c.Request.Method != http.MethodPost {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
 		}
 		return
 	}
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
 		}
 		return
 	}
@@ -52,26 +93,60 @@ func MainPage(c *gin.Context, cnf *config.Config, str *storage.Store) {
 	url := string(body)
 	key := util.GetKey()
 
-	str.SaveStore(key, url)
+	str := p.Storage.Get()
+	uuid := len(str) + 1
 
-	configs := cnf.GetConfig()
+	record := &models.ShortenRecord{
+		UUID:        uuid,
+		ShortURL:    key,
+		OriginalURL: url,
+	}
+	err = p.Storage.WriteRecord(record)
+	if err != nil {
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	configs := p.Config.GetConfig()
 
 	c.Writer.WriteHeader(http.StatusCreated)
-	c.Header("Content-Type", "text/plain")
-	c.Header("Content-Length", strconv.Itoa(len(*configs.BaseURL+"/"+key)))
+	c.Header(contentType, "text/plain")
+	c.Header(contentLength, strconv.Itoa(len(*configs.BaseURL+"/"+key)))
 	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
 	if err != nil {
-		log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
 		return
 	}
 }
 
-func IDPage(c *gin.Context, str *storage.Store) {
+func (p *HandlerProvider) IDPage(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
 		}
 		return
 	}
@@ -81,22 +156,92 @@ func IDPage(c *gin.Context, str *storage.Store) {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
 		}
 		return
 	}
 
-	value := str.Get(path)
+	value := p.Storage.GetByKey(path)
 
 	if value == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			log.Printf(errorText, err, c.Request.URL.Path, c.ClientIP())
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
 			return
 		}
 		return
 	}
 
 	c.Redirect(http.StatusTemporaryRedirect, value)
+}
+
+func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
+	var body models.ShortenRequestBody
+	bytes, err := c.GetRawData()
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+	if err := json.Unmarshal(bytes, &body); err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	if body.URL == "" {
+		message := models.ShortenResponseError{
+			Message: http.StatusText(http.StatusBadRequest),
+		}
+
+		c.Header(contentType, applicationJSON)
+		c.JSON(http.StatusBadRequest, message)
+		return
+	}
+
+	key := util.GetKey()
+
+	str := p.Storage.Get()
+	uuid := len(str) + 1
+
+	record := &models.ShortenRecord{
+		UUID:        uuid,
+		ShortURL:    key,
+		OriginalURL: body.URL,
+	}
+	err = p.Storage.WriteRecord(record)
+	if err != nil {
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	configs := p.Config.GetConfig()
+
+	response := models.ShortenResponse{
+		Result: *configs.BaseURL + "/" + key,
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.JSON(http.StatusCreated, response)
 }
