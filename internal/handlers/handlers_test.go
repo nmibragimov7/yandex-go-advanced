@@ -61,7 +61,7 @@ func TestMainPage(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	str, err := storage.InitFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
 			"",
@@ -84,7 +84,7 @@ func TestMainPage(t *testing.T) {
 		}
 	}()
 
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
@@ -141,7 +141,7 @@ func TestIdPage(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	str, err := storage.InitFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
 			"",
@@ -164,7 +164,7 @@ func TestIdPage(t *testing.T) {
 		}
 	}()
 
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
@@ -237,7 +237,7 @@ func TestShortenHandler(t *testing.T) {
 
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	str, err := storage.InitFileStorage(*cnf.FilePath)
 	if err != nil {
 		sgr.Errorw(
 			"",
@@ -260,7 +260,7 @@ func TestShortenHandler(t *testing.T) {
 		}
 	}()
 
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
