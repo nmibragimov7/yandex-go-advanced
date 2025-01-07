@@ -10,6 +10,10 @@ import (
 	"yandex-go-advanced/internal/storage"
 )
 
+const (
+	logKeyError = "error"
+)
+
 func main() {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
@@ -26,7 +30,7 @@ func main() {
 	if err != nil {
 		sgr.Errorw(
 			"failed to init file storage",
-			"error", err.Error(),
+			logKeyError, err.Error(),
 		)
 	}
 
@@ -38,7 +42,7 @@ func main() {
 	if err != nil {
 		sgr.Errorw(
 			"failed to init database",
-			"error", err.Error(),
+			logKeyError, err.Error(),
 		)
 		return
 	}
@@ -48,7 +52,7 @@ func main() {
 		if err != nil {
 			sgr.Errorw(
 				"Failed to close database connection",
-				"error", err.Error(),
+				logKeyError, err.Error(),
 			)
 		}
 	}()

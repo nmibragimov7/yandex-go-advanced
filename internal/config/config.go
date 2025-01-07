@@ -30,7 +30,11 @@ func Init() *Config {
 	instance.Server = flags.String("a", ":8080", "Server URL")
 	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
 	instance.FilePath = flags.String("f", "./storage.txt", "File path")
-	instance.DataBase = flags.String("d", "host=localhost user=postgres password=admin dbname=postgres sslmode=disable", "Database URL")
+	instance.DataBase = flags.String(
+		"d",
+		"host=localhost user=postgres password=admin dbname=postgres sslmode=disable",
+		"Database URL",
+	)
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
