@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"testing"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/db"
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/router"
@@ -62,18 +63,6 @@ func TestMainPage(t *testing.T) {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
 	str, err := storage.InitFileStorage(*cnf.FilePath)
-	if err != nil {
-		sgr.Errorw(
-			"",
-			"error", err.Error(),
-		)
-	}
-	hdp := &HandlerProvider{
-		Config:  cnf,
-		Storage: str,
-		Sugar:   sgr,
-	}
-
 	defer func() {
 		err := str.Close()
 		if err != nil {
@@ -83,7 +72,42 @@ func TestMainPage(t *testing.T) {
 			)
 		}
 	}()
+	if err != nil {
+		sgr.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
 
+	dbp := db.DatabaseProvider{
+		Sugar:  sgr,
+		Config: cnf,
+	}
+	err = dbp.Init()
+	if err != nil {
+		sgr.Errorw(
+			"failed to init database",
+			logKeyError, err.Error(),
+		)
+		return
+	}
+	database := dbp.Get()
+	defer func() {
+		err := database.Close()
+		if err != nil {
+			sgr.Errorw(
+				"Failed to close database connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
+	hdp := &HandlerProvider{
+		Config:   cnf,
+		Storage:  str,
+		Sugar:    sgr,
+		Database: &dbp,
+	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
@@ -142,18 +166,6 @@ func TestIdPage(t *testing.T) {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
 	str, err := storage.InitFileStorage(*cnf.FilePath)
-	if err != nil {
-		sgr.Errorw(
-			"",
-			"error", err.Error(),
-		)
-	}
-	hdp := &HandlerProvider{
-		Config:  cnf,
-		Storage: str,
-		Sugar:   sgr,
-	}
-
 	defer func() {
 		err := str.Close()
 		if err != nil {
@@ -163,7 +175,42 @@ func TestIdPage(t *testing.T) {
 			)
 		}
 	}()
+	if err != nil {
+		sgr.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
 
+	dbp := db.DatabaseProvider{
+		Sugar:  sgr,
+		Config: cnf,
+	}
+	err = dbp.Init()
+	if err != nil {
+		sgr.Errorw(
+			"failed to init database",
+			logKeyError, err.Error(),
+		)
+		return
+	}
+	database := dbp.Get()
+	defer func() {
+		err := database.Close()
+		if err != nil {
+			sgr.Errorw(
+				"Failed to close database connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
+	hdp := &HandlerProvider{
+		Config:   cnf,
+		Storage:  str,
+		Sugar:    sgr,
+		Database: &dbp,
+	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
@@ -238,18 +285,6 @@ func TestShortenHandler(t *testing.T) {
 	cnf := config.Init().GetConfig()
 	sgr := logger.InitLogger()
 	str, err := storage.InitFileStorage(*cnf.FilePath)
-	if err != nil {
-		sgr.Errorw(
-			"",
-			"error", err.Error(),
-		)
-	}
-	hdp := &HandlerProvider{
-		Config:  cnf,
-		Storage: str,
-		Sugar:   sgr,
-	}
-
 	defer func() {
 		err := str.Close()
 		if err != nil {
@@ -259,7 +294,42 @@ func TestShortenHandler(t *testing.T) {
 			)
 		}
 	}()
+	if err != nil {
+		sgr.Errorw(
+			"",
+			"error", err.Error(),
+		)
+	}
 
+	dbp := db.DatabaseProvider{
+		Sugar:  sgr,
+		Config: cnf,
+	}
+	err = dbp.Init()
+	if err != nil {
+		sgr.Errorw(
+			"failed to init database",
+			logKeyError, err.Error(),
+		)
+		return
+	}
+	database := dbp.Get()
+	defer func() {
+		err := database.Close()
+		if err != nil {
+			sgr.Errorw(
+				"Failed to close database connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
+	hdp := &HandlerProvider{
+		Config:   cnf,
+		Storage:  str,
+		Sugar:    sgr,
+		Database: &dbp,
+	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
 		Storage: str,
