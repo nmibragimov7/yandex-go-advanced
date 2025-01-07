@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"time"
 	"yandex-go-advanced/internal/config"
-	"yandex-go-advanced/internal/db"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +21,7 @@ type HandlerProvider struct {
 	Config   *config.Config
 	Storage  *storage.FileStorage
 	Sugar    *zap.SugaredLogger
-	Database *db.DatabaseProvider
+	Database *sqlx.DB
 }
 
 const (
@@ -254,8 +254,7 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	database := p.Database.Get()
-	err := database.PingContext(ctx)
+	err := p.Database.PingContext(ctx)
 	if err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return

@@ -38,22 +38,22 @@ func main() {
 		Sugar:  sgr,
 		Config: cnf,
 	}
-	err = dbp.Init()
+	database, err := dbp.Init()
 	if err != nil {
 		sgr.Errorw(
 			"failed to init database",
 			logKeyError, err.Error(),
 		)
-		return
 	}
-	database := dbp.Get()
 	defer func() {
-		err := database.Close()
-		if err != nil {
-			sgr.Errorw(
-				"Failed to close database connection",
-				logKeyError, err.Error(),
-			)
+		if database != nil {
+			err := database.Close()
+			if err != nil {
+				sgr.Errorw(
+					"Failed to close database connection",
+					logKeyError, err.Error(),
+				)
+			}
 		}
 	}()
 
@@ -61,7 +61,7 @@ func main() {
 		Config:   cnf,
 		Storage:  str,
 		Sugar:    sgr,
-		Database: &dbp,
+		Database: database,
 	}
 	rtr := router.RouterProvider{
 		Config:  cnf,

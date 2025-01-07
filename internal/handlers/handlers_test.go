@@ -83,22 +83,22 @@ func TestMainPage(t *testing.T) {
 		Sugar:  sgr,
 		Config: cnf,
 	}
-	err = dbp.Init()
+	database, err := dbp.Init()
 	if err != nil {
 		sgr.Errorw(
 			"failed to init database",
 			logKeyError, err.Error(),
 		)
-		return
 	}
-	database := dbp.Get()
 	defer func() {
-		err := database.Close()
-		if err != nil {
-			sgr.Errorw(
-				"Failed to close database connection",
-				logKeyError, err.Error(),
-			)
+		if database != nil {
+			err := database.Close()
+			if err != nil {
+				sgr.Errorw(
+					"Failed to close database connection",
+					logKeyError, err.Error(),
+				)
+			}
 		}
 	}()
 
@@ -106,7 +106,7 @@ func TestMainPage(t *testing.T) {
 		Config:   cnf,
 		Storage:  str,
 		Sugar:    sgr,
-		Database: &dbp,
+		Database: database,
 	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
@@ -137,7 +137,6 @@ func TestMainPage(t *testing.T) {
 		})
 	}
 }
-
 func TestIdPage(t *testing.T) {
 	type want struct {
 		code int
@@ -186,22 +185,22 @@ func TestIdPage(t *testing.T) {
 		Sugar:  sgr,
 		Config: cnf,
 	}
-	err = dbp.Init()
+	database, err := dbp.Init()
 	if err != nil {
 		sgr.Errorw(
 			"failed to init database",
 			logKeyError, err.Error(),
 		)
-		return
 	}
-	database := dbp.Get()
 	defer func() {
-		err := database.Close()
-		if err != nil {
-			sgr.Errorw(
-				"Failed to close database connection",
-				logKeyError, err.Error(),
-			)
+		if database != nil {
+			err := database.Close()
+			if err != nil {
+				sgr.Errorw(
+					"Failed to close database connection",
+					logKeyError, err.Error(),
+				)
+			}
 		}
 	}()
 
@@ -209,7 +208,7 @@ func TestIdPage(t *testing.T) {
 		Config:   cnf,
 		Storage:  str,
 		Sugar:    sgr,
-		Database: &dbp,
+		Database: database,
 	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
@@ -247,7 +246,6 @@ func TestIdPage(t *testing.T) {
 		})
 	}
 }
-
 func TestShortenHandler(t *testing.T) {
 	type want struct {
 		code        int
@@ -305,22 +303,22 @@ func TestShortenHandler(t *testing.T) {
 		Sugar:  sgr,
 		Config: cnf,
 	}
-	err = dbp.Init()
+	database, err := dbp.Init()
 	if err != nil {
 		sgr.Errorw(
 			"failed to init database",
 			logKeyError, err.Error(),
 		)
-		return
 	}
-	database := dbp.Get()
 	defer func() {
-		err := database.Close()
-		if err != nil {
-			sgr.Errorw(
-				"Failed to close database connection",
-				logKeyError, err.Error(),
-			)
+		if database != nil {
+			err := database.Close()
+			if err != nil {
+				sgr.Errorw(
+					"Failed to close database connection",
+					logKeyError, err.Error(),
+				)
+			}
 		}
 	}()
 
@@ -328,7 +326,7 @@ func TestShortenHandler(t *testing.T) {
 		Config:   cnf,
 		Storage:  str,
 		Sugar:    sgr,
-		Database: &dbp,
+		Database: database,
 	}
 	rtr := router.RouterProvider{
 		Config:  cnf,
