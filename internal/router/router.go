@@ -10,14 +10,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type Provider struct {
+type RouterProvider struct {
 	Config  *config.Config
 	Storage *storage.FileStorage
 	Sugar   *zap.SugaredLogger
 	Handler common.Handler
 }
 
-func (p *Provider) Router() *gin.Engine {
+func (p *RouterProvider) Router() *gin.Engine {
 	r := gin.Default()
 	sugarWithCtx := p.Sugar.With(
 		"app", "shortener",
@@ -29,6 +29,7 @@ func (p *Provider) Router() *gin.Engine {
 
 	r.POST("/", p.Handler.MainPage)
 	r.POST("/api/shorten", p.Handler.ShortenHandler)
+	r.GET("/ping", p.Handler.PingHandler)
 	r.GET("/:id", p.Handler.IDPage)
 
 	return r

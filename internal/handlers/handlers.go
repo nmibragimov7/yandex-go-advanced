@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/db"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
@@ -15,9 +18,10 @@ import (
 )
 
 type HandlerProvider struct {
-	Config  *config.Config
-	Storage *storage.FileStorage
-	Sugar   *zap.SugaredLogger
+	Config   *config.Config
+	Storage  *storage.FileStorage
+	Sugar    *zap.SugaredLogger
+	Database *db.DatabaseProvider
 }
 
 const (
@@ -238,10 +242,24 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 
 	configs := p.Config.GetConfig()
 
-	response := models.ShortenResponse{
+	response := models.ShortenResponseSucces{
 		Result: *configs.BaseURL + "/" + key,
 	}
 
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, response)
+}
+
+func (p *HandlerProvider) PingHandler(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	database := p.Database.Get()
+	err := database.PingContext(ctx)
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }

@@ -1,10 +1,14 @@
 package models
 
+type Response struct {
+	Message string `json:"message"`
+}
+
 type ShortenRequestBody struct {
 	URL string `json:"url,omitempty"`
 }
 
-type ShortenResponse struct {
+type ShortenResponseSucces struct {
 	Result string `json:"result"`
 }
 
