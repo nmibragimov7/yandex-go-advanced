@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -64,10 +65,11 @@ func (p *HandlerProvider) saveShortenRecord(record *models.ShortenRecord) error 
 	if *p.Config.DataBase != "" {
 		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
 		_, err := p.Database.Exec(query, record.ShortURL, record.OriginalURL)
-		return err
+		return fmt.Errorf("failed to exec record: %w", err)
 	}
 
-	return p.Storage.Set(record)
+	err := p.Storage.Set(record)
+	return fmt.Errorf("failed to set record: %w", err)
 }
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
