@@ -25,7 +25,7 @@ func Init() *Config {
 
 	instance.Server = flags.String("a", ":8080", "Server URL")
 	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
-	instance.FilePath = flags.String("f", "./storage.txt", "File path") // ./storage.txt
+	instance.FilePath = flags.String("f", "", "File path") // ./storage.txt
 	instance.DataBase = flags.String(
 		"d",
 		"",
