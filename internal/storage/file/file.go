@@ -10,12 +10,15 @@ import (
 )
 
 type Storage struct {
-	file    *os.File
-	writer  *bufio.Writer
-	scanner *bufio.Scanner
+	file   *os.File
+	writer *bufio.Writer
 }
 
 func (s *Storage) Get(key string) (string, error) {
+	if _, err := s.file.Seek(0, 0); err != nil {
+		return "", fmt.Errorf("failed to seek file: %w", err)
+	}
+
 	scanner := bufio.NewScanner(s.file)
 
 	for scanner.Scan() {
@@ -76,8 +79,7 @@ func Init(path string) (*Storage, error) {
 	}
 
 	return &Storage{
-		file:    file,
-		writer:  bufio.NewWriter(file),
-		scanner: scanner,
+		file:   file,
+		writer: bufio.NewWriter(file),
 	}, nil
 }
