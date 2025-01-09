@@ -69,7 +69,11 @@ func (p *HandlerProvider) saveShortenRecord(record *models.ShortenRecord) error 
 	}
 
 	err := p.Storage.Set(record)
-	return fmt.Errorf("failed to set record: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to set record: %w", err)
+	}
+
+	return nil
 }
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
