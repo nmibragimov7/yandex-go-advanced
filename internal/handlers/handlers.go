@@ -102,31 +102,47 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		OriginalURL: url,
 	}
 
-	err = error(nil)
 	if *p.Config.DataBase != "" {
 		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
 		_, err = p.Database.Exec(query, record.ShortURL, record.OriginalURL)
-	} else {
-		err = p.Storage.Set(record)
-	}
-
-	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
 			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
 			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
 		}
-		return
+	} else {
+		err = p.Storage.Set(record)
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
+		}
 	}
 
 	c.Writer.WriteHeader(http.StatusCreated)
@@ -171,33 +187,52 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	value := ""
+	var value string
 	err := error(nil)
 	if *p.Config.DataBase != "" {
 		var record models.ShortenRecord
 		query := "SELECT short_url, original_url FROM shortener WHERE short_url = $1"
 		err = p.Database.QueryRow(query, path).Scan(&record.ShortURL, &record.OriginalURL)
-		value = record.OriginalURL
-	} else {
-		value, err = p.Storage.Get(path)
-	}
-	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
 			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
 			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
 		}
-		return
+
+		value = record.OriginalURL
+	} else {
+		value, err = p.Storage.Get(path)
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
+		}
 	}
 
 	if value == "" {
@@ -245,30 +280,47 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		OriginalURL: body.URL,
 	}
 
-	err = error(nil)
 	if *p.Config.DataBase != "" {
 		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
 		_, err = p.Database.Exec(query, record.ShortURL, record.OriginalURL)
-	} else {
-		err = p.Storage.Set(record)
-	}
-	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
 			p.Sugar.Error(
 				logKeyError, err.Error(),
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
 			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
 		}
-		return
+	} else {
+		err = p.Storage.Set(record)
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+
+			c.Writer.WriteHeader(http.StatusInternalServerError)
+			_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
+		}
 	}
 
 	response := models.ShortenResponseSuccess{
