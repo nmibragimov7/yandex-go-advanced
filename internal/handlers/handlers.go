@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -19,7 +20,7 @@ import (
 
 type HandlerProvider struct {
 	Config   *config.Config
-	Storage  *storage.FileStorage
+	Storage  storage.Storage
 	Sugar    *zap.SugaredLogger
 	Database *sqlx.DB
 }
@@ -40,7 +41,7 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 		logKeyIP, c.ClientIP(),
 	)
 
-	message := models.ShortenResponseError{
+	message := models.Response{
 		Message: http.StatusText(http.StatusInternalServerError),
 	}
 
@@ -96,16 +97,19 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 
 	url := string(body)
 	key := util.GetKey()
-
-	str := p.Storage.Get()
-	uuid := len(str) + 1
-
 	record := &models.ShortenRecord{
-		UUID:        uuid,
 		ShortURL:    key,
 		OriginalURL: url,
 	}
-	err = p.Storage.WriteRecord(record)
+
+	err = error(nil)
+	if *p.Config.DataBase != "" {
+		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
+		_, err = p.Database.Exec(query, record.ShortURL, record.OriginalURL)
+	} else {
+		err = p.Storage.Set(record)
+	}
+
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -125,12 +129,10 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		return
 	}
 
-	configs := p.Config.GetConfig()
-
 	c.Writer.WriteHeader(http.StatusCreated)
 	c.Header(contentType, "text/plain")
-	c.Header(contentLength, strconv.Itoa(len(*configs.BaseURL+"/"+key)))
-	_, err = c.Writer.WriteString(*configs.BaseURL + "/" + key)
+	c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+key)))
+	_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + key)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -169,7 +171,34 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	value := p.Storage.GetByKey(path)
+	value := ""
+	err := error(nil)
+	if *p.Config.DataBase != "" {
+		var record models.ShortenRecord
+		query := "SELECT short_url, original_url FROM shortener WHERE short_url = $1"
+		err = p.Database.QueryRow(query, path).Scan(&record.ShortURL, &record.OriginalURL)
+		value = record.OriginalURL
+	} else {
+		value, err = p.Storage.Get(path)
+	}
+	if err != nil {
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
 
 	if value == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
@@ -201,7 +230,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	}
 
 	if body.URL == "" {
-		message := models.ShortenResponseError{
+		message := models.Response{
 			Message: http.StatusText(http.StatusBadRequest),
 		}
 
@@ -211,16 +240,18 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	}
 
 	key := util.GetKey()
-
-	str := p.Storage.Get()
-	uuid := len(str) + 1
-
 	record := &models.ShortenRecord{
-		UUID:        uuid,
 		ShortURL:    key,
 		OriginalURL: body.URL,
 	}
-	err = p.Storage.WriteRecord(record)
+
+	err = error(nil)
+	if *p.Config.DataBase != "" {
+		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
+		_, err = p.Database.Exec(query, record.ShortURL, record.OriginalURL)
+	} else {
+		err = p.Storage.Set(record)
+	}
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -240,10 +271,8 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		return
 	}
 
-	configs := p.Config.GetConfig()
-
-	response := models.ShortenResponseSucces{
-		Result: *configs.BaseURL + "/" + key,
+	response := models.ShortenResponseSuccess{
+		Result: *p.Config.BaseURL + "/" + key,
 	}
 
 	c.Header(contentType, applicationJSON)
@@ -253,6 +282,11 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
+
+	if p.Database == nil {
+		sendErrorResponse(c, p.Sugar, errors.New("database connection is nil"))
+		return
+	}
 
 	err := p.Database.PingContext(ctx)
 	if err != nil {

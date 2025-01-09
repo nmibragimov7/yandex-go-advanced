@@ -4,7 +4,6 @@ import (
 	"yandex-go-advanced/internal/common"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/middleware"
-	"yandex-go-advanced/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -12,7 +11,6 @@ import (
 
 type RouterProvider struct {
 	Config  *config.Config
-	Storage *storage.FileStorage
 	Sugar   *zap.SugaredLogger
 	Handler common.Handler
 }

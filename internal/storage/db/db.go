@@ -36,3 +36,22 @@ func (p *DatabaseProvider) Init() (*sqlx.DB, error) {
 
 	return db, nil
 }
+
+func (p *DatabaseProvider) CreateTables(db *sqlx.DB) error {
+	tables := []string{
+		`CREATE TABLE IF NOT EXISTS shortener (
+			id SERIAL PRIMARY KEY,
+			short_url VARCHAR(10) NOT NULL,
+			original_url VARCHAR(100) NOT NULL
+		)`,
+	}
+
+	for _, query := range tables {
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("failed to create table query: %w", err)
+		}
+	}
+
+	p.Sugar.Infow("All tables created successfully")
+	return nil
+}

@@ -1,34 +1,45 @@
 package storage
 
 import (
-	"sync"
+	"yandex-go-advanced/internal/config"
+	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/storage/file"
+	"yandex-go-advanced/internal/storage/memory"
+
+	"go.uber.org/zap"
 )
 
-type Storage struct {
-	storage map[string]string
-	mtx     *sync.Mutex
+type Storage interface {
+	Get(key string) (string, error)
+	Set(record *models.ShortenRecord) error
+	Close() error
 }
 
-func (s *Storage) Get() map[string]string {
-	return s.storage
+type StorageProvider struct {
+	Config *config.Config
+	Sugar  *zap.SugaredLogger
 }
 
-func (s *Storage) GetByKey(key string) string {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	return s.storage[key]
-}
+const (
+	logKeyError = "error"
+)
 
-func (s *Storage) save(key, url string) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
+func (p *StorageProvider) CreateStorage() Storage {
+	var str Storage
 
-	s.storage[key] = url
-}
+	if *p.Config.FilePath != "" {
+		str, err := file.Init(*p.Config.FilePath)
+		if err != nil {
+			p.Sugar.Errorw(
+				"failed to init file storage",
+				logKeyError, err.Error(),
+			)
+		}
 
-func newStorage() *Storage {
-	return &Storage{
-		storage: make(map[string]string),
-		mtx:     &sync.Mutex{},
+		return str
 	}
+
+	str = memory.Init()
+
+	return str
 }
