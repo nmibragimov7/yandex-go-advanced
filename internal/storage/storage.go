@@ -98,21 +98,21 @@ func (p *StorageProvider) Ping(ctx context.Context) error {
 	return nil
 }
 
-func Init(config *config.Config) (Storage, error) {
+func Init(cnf *config.Config) (Storage, error) {
 	memoryStorage := memory.Init()
 
 	var fileStorage *file.Storage
-	if *config.FilePath != "" {
+	if *cnf.FilePath != "" {
 		var err error
-		fileStorage, err = file.Init(*config.FilePath)
+		fileStorage, err = file.Init(*cnf.FilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize file storage: %w", err)
 		}
 	}
 
 	dbStorages := make(map[string]*db.Storage)
-	if *config.DataBase != "" {
-		database, err := db.Init(*config.DataBase)
+	if *cnf.DataBase != "" {
+		database, err := db.Init(*cnf.DataBase)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize database: %w", err)
 		}
