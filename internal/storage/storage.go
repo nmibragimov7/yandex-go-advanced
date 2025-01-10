@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
@@ -25,26 +24,52 @@ type StorageProvider struct {
 
 func (p *StorageProvider) Get(entity string, key string) (interface{}, error) {
 	if storage, ok := p.db[entity]; ok {
-		return storage.Get(key)
+		value, err := storage.Get(key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get record from database: %w", err)
+		}
+
+		return value, nil
 	}
 
 	if p.file != nil {
-		return p.file.Get(key)
+		value, err := p.file.Get(key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get record from file: %w", err)
+		}
+
+		return value, nil
 	}
 
-	return p.memory.Get(key)
+	value, err := p.memory.Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get record from file: %w", err)
+	}
+
+	return value, nil
 }
 
 func (p *StorageProvider) Set(entity string, record interface{}) error {
 	if storage, ok := p.db[entity]; ok {
-		return storage.Set(record)
+		err := storage.Set(record)
+		if err != nil {
+			return fmt.Errorf("failed to save record to database: %w", err)
+		}
 	}
 
 	if p.file != nil {
-		return p.file.Set(record)
+		err := p.file.Set(record)
+		if err != nil {
+			return fmt.Errorf("failed to save record to database: %w", err)
+		}
 	}
 
-	return p.memory.Set(record)
+	err := p.memory.Set(record)
+	if err != nil {
+		return fmt.Errorf("failed to save record to database: %w", err)
+	}
+
+	return nil
 }
 
 func (p *StorageProvider) Close() error {
@@ -56,7 +81,7 @@ func (p *StorageProvider) Close() error {
 
 	for entity, storage := range p.db {
 		if err := storage.Close(); err != nil {
-			return fmt.Errorf("failed to close db storage for %s: %w", entity, err)
+			return fmt.Errorf("failed to close database for %s: %w", entity, err)
 		}
 	}
 
@@ -70,7 +95,7 @@ func (p *StorageProvider) Ping(ctx context.Context) error {
 		}
 	}
 
-	return errors.New("failed to ping database")
+	return nil
 }
 
 func Init(config *config.Config) (Storage, error) {

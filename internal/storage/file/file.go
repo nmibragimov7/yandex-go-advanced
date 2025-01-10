@@ -43,7 +43,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 func (s *Storage) Set(record interface{}) error {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
-		return fmt.Errorf("failed to parse record interface")
+		return errors.New("failed to parse record interface")
 	}
 
 	data, err := json.Marshal(rec)

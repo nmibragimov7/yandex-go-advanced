@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"yandex-go-advanced/internal/models"
 )
@@ -19,7 +20,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 func (s *Storage) Set(record interface{}) error {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
-		return fmt.Errorf("failed to parse record interface")
+		return errors.New("failed to parse record interface")
 	}
 
 	query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
@@ -31,5 +32,10 @@ func (s *Storage) Set(record interface{}) error {
 }
 
 func (s *Storage) Close() error {
-	return s.DB.Close()
+	err := s.DB.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close db storage: %w", err)
+	}
+
+	return nil
 }

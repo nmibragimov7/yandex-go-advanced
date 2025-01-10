@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"yandex-go-advanced/internal/models"
 )
@@ -36,7 +35,7 @@ func (s *Storage) Set(record interface{}) error {
 
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
-		return fmt.Errorf("failed to parse record interface")
+		return errors.New("failed to parse record interface")
 	}
 
 	s.storage[rec.ShortURL] = rec.OriginalURL
