@@ -2,6 +2,7 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,9 +15,9 @@ type Storage struct {
 	writer *bufio.Writer
 }
 
-func (s *Storage) Get(key string) (string, error) {
+func (s *Storage) Get(key string) (interface{}, error) {
 	if _, err := s.file.Seek(0, 0); err != nil {
-		return "", fmt.Errorf("failed to seek file: %w", err)
+		return nil, fmt.Errorf("failed to seek file: %w", err)
 	}
 
 	scanner := bufio.NewScanner(s.file)
@@ -24,23 +25,28 @@ func (s *Storage) Get(key string) (string, error) {
 	for scanner.Scan() {
 		var record models.ShortenRecord
 		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
-			return "", fmt.Errorf("failed to unmarshal file record: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
 		}
 
 		if record.ShortURL == key {
-			return record.OriginalURL, nil
+			return &record, nil
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("failed to scan: %w", err)
+		return nil, fmt.Errorf("failed to scan: %w", err)
 	}
 
-	return "", errors.New("failed to find record")
+	return nil, errors.New("failed to find record")
 }
 
-func (s *Storage) Set(record *models.ShortenRecord) error {
-	data, err := json.Marshal(record)
+func (s *Storage) Set(record interface{}) error {
+	rec, ok := record.(*models.ShortenRecord)
+	if !ok {
+		return fmt.Errorf("failed to parse record interface")
+	}
+
+	data, err := json.Marshal(rec)
 	if err != nil {
 		return fmt.Errorf("failed to marshal record: %w", err)
 	}
@@ -58,6 +64,8 @@ func (s *Storage) Close() error {
 	}
 	return nil
 }
+
+func (s *Storage) Ping(_ context.Context) error { return nil }
 
 func Init(path string) (*Storage, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)

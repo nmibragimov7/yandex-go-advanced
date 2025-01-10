@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -15,15 +14,13 @@ import (
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
 type HandlerProvider struct {
-	Config   *config.Config
-	Storage  storage.Storage
-	Sugar    *zap.SugaredLogger
-	Database *sqlx.DB
+	Config  *config.Config
+	Storage storage.Storage
+	Sugar   *zap.SugaredLogger
 }
 
 const (
@@ -60,20 +57,6 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 	c.Header(contentLength, strconv.Itoa(len(bytes)))
 
 	c.JSON(http.StatusInternalServerError, message)
-}
-func (p *HandlerProvider) saveShortenRecord(record *models.ShortenRecord) error {
-	if *p.Config.DataBase != "" {
-		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
-		_, err := p.Database.Exec(query, record.ShortURL, record.OriginalURL)
-		return fmt.Errorf("failed to exec record: %w", err)
-	}
-
-	err := p.Storage.Set(record)
-	if err != nil {
-		return fmt.Errorf("failed to set record: %w", err)
-	}
-
-	return nil
 }
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
@@ -117,7 +100,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		OriginalURL: url,
 	}
 
-	err = p.saveShortenRecord(record)
+	err = p.Storage.Set("shortener", record)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -150,7 +133,6 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		return
 	}
 }
-
 func (p *HandlerProvider) IDPage(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -179,16 +161,7 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	var value string
-	var err error
-	if *p.Config.DataBase != "" {
-		var record models.ShortenRecord
-		query := "SELECT short_url, original_url FROM shortener WHERE short_url = $1"
-		err = p.Database.QueryRow(query, path).Scan(&record.ShortURL, &record.OriginalURL)
-		value = record.OriginalURL
-	} else {
-		value, err = p.Storage.Get(path)
-	}
+	rec, err := p.Storage.Get("shortener", path)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -208,7 +181,27 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	if value == "" {
+	record, ok := rec.(*models.ShortenRecord)
+	if !ok {
+		p.Sugar.Error(
+			logKeyError, errors.New("record is not of type *models.ShortenRecord"),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	if record.OriginalURL == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
@@ -222,9 +215,8 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, value)
+	c.Redirect(http.StatusTemporaryRedirect, record.OriginalURL)
 }
-
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
@@ -253,7 +245,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		OriginalURL: body.URL,
 	}
 
-	err = p.saveShortenRecord(record)
+	err = p.Storage.Set("shortener", record)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -280,17 +272,16 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, response)
 }
-
 func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	if p.Database == nil {
+	if p.Config.DataBase == nil {
 		sendErrorResponse(c, p.Sugar, errors.New("database connection is nil"))
 		return
 	}
 
-	err := p.Database.PingContext(ctx)
+	err := p.Storage.Ping(ctx)
 	if err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return

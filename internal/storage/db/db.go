@@ -4,25 +4,18 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"yandex-go-advanced/internal/config"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"go.uber.org/zap"
 )
 
-type DatabaseProvider struct {
-	Config *config.Config
-	Sugar  *zap.SugaredLogger
+type Storage struct {
+	DB *sqlx.DB
 }
 
-func (p *DatabaseProvider) Init() (*sqlx.DB, error) {
-	db, err := sqlx.Open("postgres", *p.Config.DataBase)
+func Init(path string) (*Storage, error) {
+	db, err := sqlx.Open("postgres", path)
 	if err != nil {
-		p.Sugar.Errorw(
-			"Failed to open database connection",
-			"error", err.Error(),
-		)
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
@@ -32,12 +25,10 @@ func (p *DatabaseProvider) Init() (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to ping database connection: %w", err)
 	}
 
-	p.Sugar.Infow("Database connection initialized successfully")
-
-	return db, nil
+	return &Storage{DB: db}, nil
 }
 
-func (p *DatabaseProvider) CreateTables(db *sqlx.DB) error {
+func InitTables(db *sqlx.DB) error {
 	tables := []string{
 		`CREATE TABLE IF NOT EXISTS shortener (
 			id SERIAL PRIMARY KEY,
@@ -52,6 +43,13 @@ func (p *DatabaseProvider) CreateTables(db *sqlx.DB) error {
 		}
 	}
 
-	p.Sugar.Infow("All tables created successfully")
+	return nil
+}
+
+func (s *Storage) Ping(ctx context.Context) error {
+	if err := s.DB.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
 	return nil
 }
