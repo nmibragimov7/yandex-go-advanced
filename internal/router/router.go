@@ -28,8 +28,8 @@ func (p *RouterProvider) Router() *gin.Engine {
 	r.POST("/", p.Handler.MainPage)
 	r.POST("/api/shorten", p.Handler.ShortenHandler)
 	r.GET("/ping", p.Handler.PingHandler)
-	r.GET("/:id", p.Handler.IDPage)
 	r.POST("/api/shorten/batch", p.Handler.ShortenBatchHandler)
+	r.GET("/:id", p.Handler.IDPage)
 
 	return r
 }

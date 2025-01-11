@@ -10,7 +10,7 @@ import (
 func (s *Storage) Get(key string) (interface{}, error) {
 	var record models.ShortenRecord
 	query := "SELECT short_url, original_url FROM shortener WHERE short_url = $1"
-	err := s.DB.Select(&record, query, key)
+	err := s.DB.QueryRow(query, key).Scan(&record.ShortURL, &record.OriginalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get record from database: %w", err)
 	}

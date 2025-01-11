@@ -311,7 +311,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		})
 		result = append(result, models.ShortenBatchResponse{
 			CorrelationID: value.CorrelationID,
-			ShortURL:      key,
+			ShortURL:      *p.Config.BaseURL + "/" + key,
 		})
 	}
 
