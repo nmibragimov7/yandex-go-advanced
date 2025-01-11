@@ -30,6 +30,7 @@ const (
 	contentType     = "Content-Type"
 	contentLength   = "Content-Length"
 	applicationJSON = "application/json"
+	shortenerTable  = "shortener"
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
@@ -100,7 +101,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		OriginalURL: url,
 	}
 
-	err = p.Storage.Set("shortener", record)
+	err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -161,7 +162,7 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	rec, err := p.Storage.Get("shortener", path)
+	rec, err := p.Storage.Get(shortenerTable, path)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -245,7 +246,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		OriginalURL: body.URL,
 	}
 
-	err = p.Storage.Set("shortener", record)
+	err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
@@ -301,8 +302,8 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		return
 	}
 
-	var values []interface{}
-	var result []models.ShortenBatchResponse
+	values := make([]interface{}, 0, len(body))
+	result := make([]models.ShortenBatchResponse, 0, len(body))
 	for _, value := range body {
 		key := util.GetKey()
 		values = append(values, &models.ShortenRecord{
@@ -315,7 +316,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		})
 	}
 
-	err = p.Storage.SetByTransaction("shortener", values)
+	err = p.Storage.SetByTransaction(shortenerTable, values)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),
