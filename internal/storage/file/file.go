@@ -58,6 +58,31 @@ func (s *Storage) Set(record interface{}) error {
 	return nil
 }
 
+func (s *Storage) SetByTransaction(records []interface{}) error {
+	rcs := make([]*models.ShortenRecord, 0, len(records))
+	for _, record := range records {
+		rec, ok := record.(*models.ShortenRecord)
+		if !ok {
+			return errors.New("failed to parse record interface")
+		}
+
+		rcs = append(rcs, rec)
+	}
+
+	for _, value := range rcs {
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("failed to marshal record: %w", err)
+		}
+		_, err = s.file.Write(append(data, '\n'))
+		if err != nil {
+			return fmt.Errorf("failed to write record to file: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (s *Storage) Close() error {
 	if err := s.file.Close(); err != nil {
 		return fmt.Errorf("failed to close file: %w", err)

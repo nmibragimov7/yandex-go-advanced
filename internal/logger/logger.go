@@ -9,12 +9,12 @@ import (
 func Init() *zap.SugaredLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Printf("Zap NewDevelopment: %s", err.Error())
+		log.Printf("failed to build development logger: %s", err.Error())
 	}
 	defer func() {
 		err := logger.Sync()
 		if err != nil {
-			log.Printf("Logger Sync: %s", err.Error())
+			log.Printf("failed to sync logger: %s", err.Error())
 		}
 	}()
 

@@ -9,4 +9,5 @@ type Handler interface {
 	IDPage(c *gin.Context)
 	ShortenHandler(c *gin.Context)
 	PingHandler(c *gin.Context)
+	ShortenBatchHandler(c *gin.Context)
 }

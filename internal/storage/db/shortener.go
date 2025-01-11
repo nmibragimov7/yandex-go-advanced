@@ -1,22 +1,16 @@
-package postgres
+package db
 
 import (
 	"errors"
 	"fmt"
+	"log"
 	"yandex-go-advanced/internal/models"
-	"yandex-go-advanced/internal/storage/db"
-
-	"github.com/jmoiron/sqlx"
 )
-
-type Storage struct {
-	DB *sqlx.DB
-}
 
 func (s *Storage) Get(key string) (interface{}, error) {
 	var record models.ShortenRecord
 	query := "SELECT short_url, original_url FROM shortener WHERE short_url = $1"
-	err := s.DB.QueryRow(query, key).Scan(&record.ShortURL, &record.OriginalURL)
+	err := s.DB.Select(&record, query, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get record from database: %w", err)
 	}
@@ -24,7 +18,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return &record, nil
 }
 
-func (s *db.Storage) Set(record interface{}) error {
+func (s *Storage) Set(record interface{}) error {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
 		return errors.New("failed to parse record interface")
@@ -38,7 +32,45 @@ func (s *db.Storage) Set(record interface{}) error {
 	return nil
 }
 
-func (s *db.Storage) Close() error {
+func (s *Storage) SetByTransaction(records []interface{}) error {
+	rcs := make([]*models.ShortenRecord, 0, len(records))
+	for _, record := range records {
+		rec, ok := record.(*models.ShortenRecord)
+		if !ok {
+			return errors.New("failed to parse record interface")
+		}
+
+		rcs = append(rcs, rec)
+	}
+
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Printf("failed to rollback transaction: %s", err.Error())
+		}
+	}()
+
+	for _, value := range rcs {
+		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
+		_, err := tx.Exec(query, value.ShortURL, value.OriginalURL)
+		if err != nil {
+			return fmt.Errorf("failed to insert record into database: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) Close() error {
 	err := s.DB.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close db storage: %w", err)

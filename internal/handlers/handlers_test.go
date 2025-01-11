@@ -99,7 +99,7 @@ func TestMainPage(t *testing.T) {
 			res, resBody := util.TestRequest(t, ts, test.method, test.path, bytes.NewBufferString(test.body), headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -177,7 +177,7 @@ func TestIdPage(t *testing.T) {
 			resp, resBody := util.TestRequest(t, ts, http.MethodPost, "/", bytes.NewBufferString("https://google.kz/"), headers)
 			defer func() {
 				if err := resp.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -189,7 +189,7 @@ func TestIdPage(t *testing.T) {
 			res, _ := util.TestRequest(t, ts, test.method, parsedURL.Path, nil, headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -275,7 +275,7 @@ func TestShortenHandler(t *testing.T) {
 			res, _ := util.TestRequest(t, ts, test.method, test.path, buf, headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 

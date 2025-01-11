@@ -34,7 +34,7 @@ func Init() *Config {
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
-		log.Printf("ERROR: flag Parse: %s", err.Error())
+		log.Printf("failed to parse flags: %s", err.Error())
 	}
 
 	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {

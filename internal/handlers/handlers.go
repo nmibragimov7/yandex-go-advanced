@@ -289,3 +289,52 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }
+func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
+	var body []models.ShortenBatchRequest
+	bytes, err := c.GetRawData()
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+	if err := json.Unmarshal(bytes, &body); err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	var values []interface{}
+	var result []models.ShortenBatchResponse
+	for _, value := range body {
+		key := util.GetKey()
+		values = append(values, &models.ShortenRecord{
+			OriginalURL: value.OriginalURL,
+			ShortURL:    key,
+		})
+		result = append(result, models.ShortenBatchResponse{
+			CorrelationID: value.CorrelationID,
+			ShortURL:      key,
+		})
+	}
+
+	err = p.Storage.SetByTransaction("shortener", values)
+	if err != nil {
+		p.Sugar.Error(
+			logKeyError, err.Error(),
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.Error(
+				logKeyError, err.Error(),
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			)
+		}
+		return
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.JSON(http.StatusCreated, result)
+}

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -28,7 +29,18 @@ func Init(path string) (*Storage, error) {
 	return &Storage{DB: db}, nil
 }
 
-func InitTables(db *sqlx.DB) error {
+func Bootstrap(db *sqlx.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Printf("failed to rollback transaction: %s", err.Error())
+		}
+	}()
+
 	tables := []string{
 		`CREATE TABLE IF NOT EXISTS shortener (
 			id SERIAL PRIMARY KEY,
@@ -38,9 +50,14 @@ func InitTables(db *sqlx.DB) error {
 	}
 
 	for _, query := range tables {
-		if _, err := db.Exec(query); err != nil {
+		if _, err := tx.Exec(query); err != nil {
 			return fmt.Errorf("failed to create table query: %w", err)
 		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

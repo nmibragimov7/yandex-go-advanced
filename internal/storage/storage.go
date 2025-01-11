@@ -12,6 +12,7 @@ import (
 type Storage interface {
 	Get(entity string, key string) (interface{}, error)
 	Set(entity string, record interface{}) error
+	SetByTransaction(entity string, records []interface{}) error
 	Close() error
 	Ping(ctx context.Context) error
 }
@@ -55,18 +56,49 @@ func (p *StorageProvider) Set(entity string, record interface{}) error {
 		if err != nil {
 			return fmt.Errorf("failed to save record to database: %w", err)
 		}
+
+		return nil
 	}
 
 	if p.file != nil {
 		err := p.file.Set(record)
 		if err != nil {
-			return fmt.Errorf("failed to save record to database: %w", err)
+			return fmt.Errorf("failed to save record to file: %w", err)
 		}
+
+		return nil
 	}
 
 	err := p.memory.Set(record)
 	if err != nil {
-		return fmt.Errorf("failed to save record to database: %w", err)
+		return fmt.Errorf("failed to save record to memory: %w", err)
+	}
+
+	return nil
+}
+
+func (p *StorageProvider) SetByTransaction(entity string, records []interface{}) error {
+	if storage, ok := p.db[entity]; ok {
+		err := storage.SetByTransaction(records)
+		if err != nil {
+			return fmt.Errorf("failed to save records to database: %w", err)
+		}
+
+		return nil
+	}
+
+	if p.file != nil {
+		err := p.file.SetByTransaction(records)
+		if err != nil {
+			return fmt.Errorf("failed to save records to file: %w", err)
+		}
+
+		return nil
+	}
+
+	err := p.memory.SetByTransaction(records)
+	if err != nil {
+		return fmt.Errorf("failed to save records to memory: %w", err)
 	}
 
 	return nil
@@ -118,7 +150,7 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 
 		if database != nil {
-			err := db.InitTables(database.DB)
+			err := db.Bootstrap(database.DB)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create table queries: %w", err)
 			}
