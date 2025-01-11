@@ -1,10 +1,17 @@
-package db
+package postgres
 
 import (
 	"errors"
 	"fmt"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/storage/db"
+
+	"github.com/jmoiron/sqlx"
 )
+
+type Storage struct {
+	DB *sqlx.DB
+}
 
 func (s *Storage) Get(key string) (interface{}, error) {
 	var record models.ShortenRecord
@@ -17,7 +24,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return &record, nil
 }
 
-func (s *Storage) Set(record interface{}) error {
+func (s *db.Storage) Set(record interface{}) error {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
 		return errors.New("failed to parse record interface")
@@ -31,7 +38,7 @@ func (s *Storage) Set(record interface{}) error {
 	return nil
 }
 
-func (s *Storage) Close() error {
+func (s *db.Storage) Close() error {
 	err := s.DB.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close db storage: %w", err)
