@@ -3,9 +3,9 @@ package db
 import "fmt"
 
 type DuplicateError struct {
+	Err      error
 	ShortURL string
 	Code     string
-	Err      error
 }
 
 func (e *DuplicateError) Error() string {
