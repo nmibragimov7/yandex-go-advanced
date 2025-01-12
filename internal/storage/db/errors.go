@@ -2,18 +2,18 @@ package db
 
 import "fmt"
 
-type ConflictError struct {
+type DuplicateError struct {
 	ShortURL string
 	Code     string
 	Err      error
 }
 
-func (e *ConflictError) Error() string {
-	return fmt.Sprintf("conflicting %s with %s: %v", e.Code, e.ShortURL, e.Err)
+func (e *DuplicateError) Error() string {
+	return fmt.Sprintf("db error code %s, exists %s: %v", e.Code, e.ShortURL, e.Err)
 }
 
-func NewConflictError(shorten string, code string, err error) error {
-	return &ConflictError{
+func NewDuplicateError(shorten string, code string, err error) error {
+	return &DuplicateError{
 		ShortURL: shorten,
 		Code:     code,
 		Err:      err,

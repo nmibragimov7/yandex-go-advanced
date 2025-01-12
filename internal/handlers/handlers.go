@@ -110,12 +110,12 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 			logKeyIP, c.ClientIP(),
 		)
 
-		var conflictError *db.ConflictError
-		if errors.As(err, &conflictError) {
+		var duplicateError *db.DuplicateError
+		if errors.As(err, &duplicateError) {
 			c.Writer.WriteHeader(http.StatusConflict)
 			c.Header(contentType, "text/plain")
-			c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+conflictError.ShortURL)))
-			_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + conflictError.ShortURL)
+			c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+duplicateError.ShortURL)))
+			_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + duplicateError.ShortURL)
 			if err != nil {
 				p.Sugar.Error(
 					logKeyError, err.Error(),
@@ -271,10 +271,10 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 			logKeyIP, c.ClientIP(),
 		)
 
-		var conflictError *db.ConflictError
-		if errors.As(err, &conflictError) {
+		var duplicateError *db.DuplicateError
+		if errors.As(err, &duplicateError) {
 			response := models.ShortenResponseSuccess{
-				Result: *p.Config.BaseURL + "/" + conflictError.ShortURL,
+				Result: *p.Config.BaseURL + "/" + duplicateError.ShortURL,
 			}
 
 			c.Header(contentType, applicationJSON)

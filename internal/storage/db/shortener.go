@@ -39,7 +39,7 @@ func (s *Storage) Set(record interface{}) error {
 				return fmt.Errorf("failed to get record from database: %w", err)
 			}
 
-			return NewConflictError(
+			return NewDuplicateError(
 				shortURL,
 				pgerrcode.UniqueViolation,
 				err,
