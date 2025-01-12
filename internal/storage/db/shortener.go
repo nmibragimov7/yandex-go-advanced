@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"yandex-go-advanced/internal/models"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/lib/pq"
 )
 
 func (s *Storage) Get(key string) (interface{}, error) {
@@ -27,6 +30,22 @@ func (s *Storage) Set(record interface{}) error {
 	query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
 	_, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL)
 	if err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			var shortURL string
+			query = "SELECT short_url FROM shortener WHERE original_url = $1"
+			errs := s.DB.QueryRow(query, rec.OriginalURL).Scan(&shortURL)
+			if errs != nil {
+				return fmt.Errorf("failed to get record from database: %w", err)
+			}
+
+			return NewConflictError(
+				shortURL,
+				pgerrcode.UniqueViolation,
+				err,
+			)
+		}
+
 		return fmt.Errorf("failed to insert record into database: %w", err)
 	}
 	return nil

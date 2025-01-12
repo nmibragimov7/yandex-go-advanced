@@ -11,6 +11,7 @@ import (
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
+	"yandex-go-advanced/internal/storage/db"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
@@ -108,6 +109,22 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
 		)
+
+		var conflictError *db.ConflictError
+		if errors.As(err, &conflictError) {
+			c.Writer.WriteHeader(http.StatusConflict)
+			c.Header(contentType, "text/plain")
+			c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+conflictError.ShortURL)))
+			_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + conflictError.ShortURL)
+			if err != nil {
+				p.Sugar.Error(
+					logKeyError, err.Error(),
+					logKeyURI, c.Request.URL.Path,
+					logKeyIP, c.ClientIP(),
+				)
+			}
+			return
+		}
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
@@ -253,6 +270,17 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
 		)
+
+		var conflictError *db.ConflictError
+		if errors.As(err, &conflictError) {
+			response := models.ShortenResponseSuccess{
+				Result: *p.Config.BaseURL + "/" + conflictError.ShortURL,
+			}
+
+			c.Header(contentType, applicationJSON)
+			c.JSON(http.StatusConflict, response)
+			return
+		}
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
