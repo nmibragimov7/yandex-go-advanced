@@ -3,21 +3,27 @@ package middleware
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+	"yandex-go-advanced/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+)
+
+const (
+	logKeyError = "error"
 )
 
 type gzipProvider struct {
 	writer gin.ResponseWriter
 	reader io.ReadCloser
 }
-
 type gzipWriter struct {
 	gin.ResponseWriter
 	zw *gzip.Writer
@@ -30,7 +36,6 @@ func (w *gzipWriter) Write(b []byte) (int, error) {
 	}
 	return n, nil
 }
-
 func (w *gzipWriter) Close() error {
 	err := w.zw.Close()
 	if err != nil {
@@ -38,16 +43,10 @@ func (w *gzipWriter) Close() error {
 	}
 	return nil
 }
-
-const (
-	logKeyError = "error"
-)
-
 func (p *gzipProvider) gzipHandler() *gzip.Writer {
 	zw := gzip.NewWriter(p.writer)
 	return zw
 }
-
 func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, error) {
 	zr, err := gzip.NewReader(p.reader)
 	if err != nil {
@@ -61,7 +60,6 @@ func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, erro
 
 	return zr, nil
 }
-
 func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		contentType := c.Request.Header.Get("Content-Type")
@@ -148,7 +146,6 @@ func (w *loggerWriter) Write(data []byte) (int, error) {
 	}
 	return n, nil
 }
-
 func LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -175,5 +172,29 @@ func LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 			"status", status,
 			"size", size,
 		)
+	}
+}
+
+func TimeoutMiddleware(sgr *zap.SugaredLogger, timeout time.Duration) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
+		defer cancel()
+
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			sgr.Errorw(
+				"failed to handle request by timeout",
+				logKeyError, ctx.Err().Error(),
+			)
+			
+			message := models.Response{
+				Message: http.StatusText(http.StatusBadRequest),
+			}
+
+			c.JSON(http.StatusGatewayTimeout, message)
+			c.Abort()
+		}
 	}
 }

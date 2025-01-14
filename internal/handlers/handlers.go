@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage"
@@ -35,10 +34,11 @@ const (
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
-	sgr.Error(
-		logKeyError, err.Error(),
+	sgr.With(
 		logKeyURI, c.Request.URL.Path,
 		logKeyIP, c.ClientIP(),
+	).Error(
+		err,
 	)
 
 	message := models.Response{
@@ -47,10 +47,11 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 
 	bytes, err := json.Marshal(message)
 	if err != nil {
-		sgr.Error(
-			logKeyError, err.Error(),
+		sgr.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
 		)
 		return
 	}
@@ -66,10 +67,11 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -77,19 +79,21 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
+		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
 		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -104,10 +108,11 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 
 	err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
+		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
 		)
 
 		var duplicateError *db.DuplicateError
@@ -117,10 +122,11 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 			c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+duplicateError.ShortURL)))
 			_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + duplicateError.ShortURL)
 			if err != nil {
-				p.Sugar.Error(
-					logKeyError, err.Error(),
+				p.Sugar.With(
 					logKeyURI, c.Request.URL.Path,
 					logKeyIP, c.ClientIP(),
+				).Error(
+					err,
 				)
 			}
 			return
@@ -129,10 +135,11 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -143,10 +150,11 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 	c.Header(contentLength, strconv.Itoa(len(*p.Config.BaseURL+"/"+key)))
 	_, err = c.Writer.WriteString(*p.Config.BaseURL + "/" + key)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
+		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
 		)
 		return
 	}
@@ -156,10 +164,11 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -170,10 +179,11 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -181,19 +191,21 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 
 	rec, err := p.Storage.Get(shortenerTable, path)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
+		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
 		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -201,19 +213,21 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 
 	record, ok := rec.(*models.ShortenRecord)
 	if !ok {
-		p.Sugar.Error(
-			logKeyError, errors.New("record is not of type *models.ShortenRecord"),
+		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
+		).Error(
+			fmt.Errorf("record is not of type *models.ShortenRecord, actual type: %T", rec),
 		)
 
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -223,10 +237,11 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 			return
 		}
@@ -248,6 +263,13 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	}
 
 	if body.URL == "" {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			fmt.Errorf("body url is empty: %s", body),
+		)
+
 		message := models.Response{
 			Message: http.StatusText(http.StatusBadRequest),
 		}
@@ -265,14 +287,15 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 
 	err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
 		var duplicateError *db.DuplicateError
 		if errors.As(err, &duplicateError) {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Warn(
+				err.Error(),
+			)
+
 			response := models.ShortenResponseSuccess{
 				Result: *p.Config.BaseURL + "/" + duplicateError.ShortURL,
 			}
@@ -282,13 +305,20 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 			return
 		}
 
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
+		)
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
+			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
 			)
 		}
 		return
@@ -302,8 +332,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 func (p *HandlerProvider) PingHandler(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
+	ctx := c.Request.Context()
 
 	if p.Config.DataBase == nil {
 		sendErrorResponse(c, p.Sugar, errors.New("database connection is nil"))
@@ -344,7 +373,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		})
 	}
 
-	err = p.Storage.SetByTransaction(shortenerTable, values)
+	err = p.Storage.SetAll(shortenerTable, values)
 	if err != nil {
 		p.Sugar.Error(
 			logKeyError, err.Error(),

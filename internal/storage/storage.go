@@ -12,7 +12,7 @@ import (
 type Storage interface {
 	Get(entity string, key string) (interface{}, error)
 	Set(entity string, record interface{}) error
-	SetByTransaction(entity string, records []interface{}) error
+	SetAll(entity string, records []interface{}) error
 	Close() error
 	Ping(ctx context.Context) error
 }
@@ -77,9 +77,9 @@ func (p *StorageProvider) Set(entity string, record interface{}) error {
 	return nil
 }
 
-func (p *StorageProvider) SetByTransaction(entity string, records []interface{}) error {
+func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	if storage, ok := p.db[entity]; ok {
-		err := storage.SetByTransaction(records)
+		err := storage.SetAll(records)
 		if err != nil {
 			return fmt.Errorf("failed to save records to database: %w", err)
 		}
@@ -88,7 +88,7 @@ func (p *StorageProvider) SetByTransaction(entity string, records []interface{})
 	}
 
 	if p.file != nil {
-		err := p.file.SetByTransaction(records)
+		err := p.file.SetAll(records)
 		if err != nil {
 			return fmt.Errorf("failed to save records to file: %w", err)
 		}
@@ -96,7 +96,7 @@ func (p *StorageProvider) SetByTransaction(entity string, records []interface{})
 		return nil
 	}
 
-	err := p.memory.SetByTransaction(records)
+	err := p.memory.SetAll(records)
 	if err != nil {
 		return fmt.Errorf("failed to save records to memory: %w", err)
 	}
@@ -150,11 +150,6 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 
 		if database != nil {
-			err := db.Bootstrap(database.DB)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create table queries: %w", err)
-			}
-
 			dbStorages["shortener"] = &db.Storage{DB: database.DB}
 		}
 	}

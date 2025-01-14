@@ -42,7 +42,7 @@ func (s *Storage) Set(record interface{}) error {
 	return nil
 }
 
-func (s *Storage) SetByTransaction(records []interface{}) error {
+func (s *Storage) SetAll(records []interface{}) error {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 

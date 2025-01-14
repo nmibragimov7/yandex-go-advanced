@@ -58,7 +58,7 @@ func (s *Storage) Set(record interface{}) error {
 	return nil
 }
 
-func (s *Storage) SetByTransaction(records []interface{}) error {
+func (s *Storage) SetAll(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
 		rec, ok := record.(*models.ShortenRecord)

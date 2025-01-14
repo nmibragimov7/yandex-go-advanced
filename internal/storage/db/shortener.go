@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"yandex-go-advanced/internal/models"
 
 	"github.com/jackc/pgerrcode"
@@ -51,7 +52,7 @@ func (s *Storage) Set(record interface{}) error {
 	return nil
 }
 
-func (s *Storage) SetByTransaction(records []interface{}) error {
+func (s *Storage) SetAll(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
 		rec, ok := record.(*models.ShortenRecord)
@@ -73,12 +74,16 @@ func (s *Storage) SetByTransaction(records []interface{}) error {
 		}
 	}()
 
-	for _, value := range rcs {
-		query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
-		_, err := tx.Exec(query, value.ShortURL, value.OriginalURL)
-		if err != nil {
-			return fmt.Errorf("failed to insert record into database: %w", err)
-		}
+	queries := make([]string, 0, len(rcs))
+	params := make([]interface{}, 0, len(rcs)*2)
+	for i, record := range rcs {
+		queries = append(queries, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		params = append(params, record.ShortURL, record.OriginalURL)
+	}
+	query := "INSERT INTO shortener (short_url, original_url) VALUES " + strings.Join(queries, ", ")
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		return fmt.Errorf("failed to insert records into database: %w", err)
 	}
 
 	err = tx.Commit()
@@ -90,8 +95,7 @@ func (s *Storage) SetByTransaction(records []interface{}) error {
 }
 
 func (s *Storage) Close() error {
-	err := s.DB.Close()
-	if err != nil {
+	if err := s.DB.Close(); err != nil {
 		return fmt.Errorf("failed to close db storage: %w", err)
 	}
 

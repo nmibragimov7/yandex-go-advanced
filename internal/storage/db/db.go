@@ -26,10 +26,15 @@ func Init(path string) (*Storage, error) {
 		return nil, fmt.Errorf("failed to ping database connection: %w", err)
 	}
 
+	err = bootstrap(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create table queries: %w", err)
+	}
+
 	return &Storage{DB: db}, nil
 }
 
-func Bootstrap(db *sqlx.DB) error {
+func bootstrap(db *sqlx.DB) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)

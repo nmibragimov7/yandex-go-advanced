@@ -1,6 +1,7 @@
 package router
 
 import (
+	"time"
 	"yandex-go-advanced/internal/common"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/middleware"
@@ -24,6 +25,7 @@ func (p *RouterProvider) Router() *gin.Engine {
 
 	r.Use(middleware.GzipMiddleware(sugarWithCtx))
 	r.Use(middleware.LoggerMiddleware(sugarWithCtx))
+	r.Use(middleware.TimeoutMiddleware(sugarWithCtx, 2*time.Second))
 
 	r.POST("/", p.Handler.MainPage)
 	r.POST("/api/shorten", p.Handler.ShortenHandler)
