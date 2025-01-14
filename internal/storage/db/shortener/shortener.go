@@ -50,7 +50,7 @@ func (s *Storage) Set(record interface{}) error {
 			return db.NewDuplicateError(
 				shortURL,
 				pgerrcode.UniqueViolation,
-				err,
+				fmt.Errorf("shortener record already exists: %w", err),
 			)
 		}
 
@@ -87,13 +87,13 @@ func (s *Storage) SetAll(records []interface{}) error {
 		queries = append(queries, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
 		params = append(params, record.ShortURL, record.OriginalURL)
 	}
-	query := "INSERT INTO shortener (short_url, original_url) VALUES " + strings.Join(queries, ", ")
-	stmt, err := tx.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("failed to prepare query: %w", err)
-	}
 
-	_, err = stmt.Exec(params...)
+	query := fmt.Sprintf(
+		"INSERT INTO shortener (short_url, original_url) VALUES %s",
+		strings.Join(queries, ", "),
+	)
+
+	_, err = tx.Exec(query, params...)
 	if err != nil {
 		return fmt.Errorf("failed to insert records into database: %w", err)
 	}

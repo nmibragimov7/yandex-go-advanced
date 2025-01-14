@@ -6,7 +6,6 @@ import (
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
 	"yandex-go-advanced/internal/storage/db/shortener"
-	"yandex-go-advanced/internal/storage/db/users"
 	"yandex-go-advanced/internal/storage/file"
 	"yandex-go-advanced/internal/storage/memory"
 )
@@ -153,7 +152,6 @@ func Init(cnf *config.Config) (Storage, error) {
 
 		if database != nil {
 			dbStorages["shortener"] = &shortener.Storage{DB: database}
-			dbStorages["users"] = &users.Storage{DB: database}
 		}
 	}
 
