@@ -188,7 +188,7 @@ func TimeoutMiddleware(sgr *zap.SugaredLogger, timeout time.Duration) gin.Handle
 				"failed to handle request by timeout",
 				logKeyError, ctx.Err().Error(),
 			)
-			
+
 			message := models.Response{
 				Message: http.StatusText(http.StatusBadRequest),
 			}

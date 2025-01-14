@@ -1,15 +1,22 @@
-package db
+package users
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/storage/db"
 
 	"github.com/jackc/pgerrcode"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
+
+type Storage struct {
+	DB *sqlx.DB
+}
 
 func (s *Storage) Get(key string) (interface{}, error) {
 	var record models.ShortenRecord
@@ -40,7 +47,7 @@ func (s *Storage) Set(record interface{}) error {
 				return fmt.Errorf("failed to get record from database: %w", err)
 			}
 
-			return NewDuplicateError(
+			return db.NewDuplicateError(
 				shortURL,
 				pgerrcode.UniqueViolation,
 				err,
@@ -81,7 +88,12 @@ func (s *Storage) SetAll(records []interface{}) error {
 		params = append(params, record.ShortURL, record.OriginalURL)
 	}
 	query := "INSERT INTO shortener (short_url, original_url) VALUES " + strings.Join(queries, ", ")
-	_, err = tx.Exec(query, params...)
+	stmt, err := tx.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	_, err = stmt.Exec(params...)
 	if err != nil {
 		return fmt.Errorf("failed to insert records into database: %w", err)
 	}
@@ -89,6 +101,14 @@ func (s *Storage) SetAll(records []interface{}) error {
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) Ping(ctx context.Context) error {
+	if err := s.DB.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	return nil

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
+	"yandex-go-advanced/internal/storage/db/shortener"
+	"yandex-go-advanced/internal/storage/db/users"
 	"yandex-go-advanced/internal/storage/file"
 	"yandex-go-advanced/internal/storage/memory"
 )
@@ -18,7 +20,7 @@ type Storage interface {
 }
 
 type StorageProvider struct {
-	db     map[string]*db.Storage
+	db     map[string]db.Repository
 	file   *file.Storage
 	memory *memory.Storage
 }
@@ -142,7 +144,7 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 	}
 
-	dbStorages := make(map[string]*db.Storage)
+	dbStorages := make(map[string]db.Repository)
 	if *cnf.DataBase != "" {
 		database, err := db.Init(*cnf.DataBase)
 		if err != nil {
@@ -150,7 +152,8 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 
 		if database != nil {
-			dbStorages["shortener"] = &db.Storage{DB: database.DB}
+			dbStorages["shortener"] = &shortener.Storage{DB: database}
+			dbStorages["users"] = &users.Storage{DB: database}
 		}
 	}
 

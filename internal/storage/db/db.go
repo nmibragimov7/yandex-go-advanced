@@ -10,17 +10,21 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Storage struct {
-	DB *sqlx.DB
+type Repository interface {
+	Get(key string) (interface{}, error)
+	Set(record interface{}) error
+	SetAll(records []interface{}) error
+	Close() error
+	Ping(ctx context.Context) error
 }
 
-func Init(path string) (*Storage, error) {
+func Init(path string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err = db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database connection: %w", err)
@@ -31,7 +35,7 @@ func Init(path string) (*Storage, error) {
 		return nil, fmt.Errorf("failed to create table queries: %w", err)
 	}
 
-	return &Storage{DB: db}, nil
+	return db, nil
 }
 
 func bootstrap(db *sqlx.DB) error {
@@ -63,14 +67,6 @@ func bootstrap(db *sqlx.DB) error {
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (s *Storage) Ping(ctx context.Context) error {
-	if err := s.DB.PingContext(ctx); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	return nil
