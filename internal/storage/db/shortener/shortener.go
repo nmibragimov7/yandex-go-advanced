@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage/db"
 
@@ -47,11 +46,11 @@ func (s *Storage) Set(record interface{}) error {
 				return fmt.Errorf("failed to get record from database: %w", err)
 			}
 
-			return db.NewDuplicateError(
+			return fmt.Errorf("shortener already exists: %w", db.NewDuplicateError(
 				shortURL,
 				pgerrcode.UniqueViolation,
-				fmt.Errorf("shortener record already exists: %w", err),
-			)
+				err,
+			))
 		}
 
 		return fmt.Errorf("failed to insert record into database: %w", err)
@@ -81,17 +80,14 @@ func (s *Storage) SetAll(records []interface{}) error {
 		}
 	}()
 
-	queries := make([]string, 0, len(rcs))
+	query := `INSERT INTO shortener (short_url, original_url) VALUES `
 	params := make([]interface{}, 0, len(rcs)*2)
 	for i, record := range rcs {
-		queries = append(queries, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		query += fmt.Sprintf("($%d,$%d),", i*2+1, i*2+2)
 		params = append(params, record.ShortURL, record.OriginalURL)
 	}
 
-	query := fmt.Sprintf(
-		"INSERT INTO shortener (short_url, original_url) VALUES %s",
-		strings.Join(queries, ", "),
-	)
+	query = query[:len(query)-1]
 
 	_, err = tx.Exec(query, params...)
 	if err != nil {
