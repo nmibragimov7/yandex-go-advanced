@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
+	"time"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/storage/db"
 
@@ -59,6 +61,25 @@ func (s *Storage) Set(record interface{}) error {
 }
 
 func (s *Storage) SetAll(records []interface{}) error {
+	maxRetries := 5
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		err := s.SaveBatches(records)
+		if err == nil {
+			return nil
+		}
+
+		if !(strings.Contains(err.Error(), "deadlock") || strings.Contains(err.Error(), "timeout")) {
+			return fmt.Errorf("failed to insert records into database: %w", err)
+		}
+
+		time.Sleep(time.Duration(attempt) * time.Second)
+	}
+
+	return errors.New("failed to attempt retries")
+}
+
+func (s *Storage) SaveBatches(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
 		rec, ok := record.(*models.ShortenRecord)

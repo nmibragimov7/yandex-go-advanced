@@ -21,6 +21,7 @@ func (p *RouterProvider) Router() *gin.Engine {
 	sugarWithCtx := p.Sugar.With(
 		"app", "shortener",
 		"service", "main",
+		"func", "Router",
 	)
 
 	r.Use(middleware.GzipMiddleware(sugarWithCtx))

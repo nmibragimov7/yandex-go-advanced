@@ -81,6 +81,7 @@ func (p *StorageProvider) Set(entity string, record interface{}) error {
 func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	if storage, ok := p.db[entity]; ok {
 		err := storage.SetAll(records)
+
 		if err != nil {
 			return fmt.Errorf("failed to save records to database: %w", err)
 		}
