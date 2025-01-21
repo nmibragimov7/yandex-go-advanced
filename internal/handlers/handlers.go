@@ -65,8 +65,14 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
 	id, ok := c.Get("user_id")
-	if ok {
-		userID = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
+	}
+	userID, ok = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
 	}
 
 	if c.Request.Method != http.MethodPost {
@@ -260,8 +266,14 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
 	id, ok := c.Get("user_id")
-	if ok {
-		userID = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
+	}
+	userID, ok = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
 	}
 
 	var body models.ShortenRequestBody
@@ -365,8 +377,14 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
 	id, ok := c.Get("user_id")
-	if ok {
-		userID = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
+	}
+	userID, ok = id.(int64)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+		return
 	}
 
 	var body []models.ShortenBatchRequest
@@ -439,13 +457,16 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 
 	records := make([]interface{}, 0, len(rcs))
 	for _, rc := range rcs {
-		value := rc.(models.ShortenRecord)
+		value, ok := rc.(models.ShortenRecord)
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("invalid shorten record"))
+			return
+		}
 		records = append(records, map[string]interface{}{
 			"short_url":    value.ShortURL,
 			"original_url": value.OriginalURL,
 		})
 	}
-	fmt.Println("records", records)
 
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, records)

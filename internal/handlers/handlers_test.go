@@ -12,6 +12,7 @@ import (
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/router"
+	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/util"
 
@@ -84,10 +85,15 @@ func TestMainPage(t *testing.T) {
 		Storage: str,
 		Sugar:   sgr,
 	}
+	ssp := &session.SessionProvider{
+		Config: cnf,
+	}
 	rtr := router.RouterProvider{
+		Storage: str,
 		Config:  cnf,
 		Sugar:   sgr,
 		Handler: hdp,
+		Session: ssp,
 	}
 
 	for _, test := range tests {
@@ -162,10 +168,15 @@ func TestIdPage(t *testing.T) {
 		Storage: str,
 		Sugar:   sgr,
 	}
+	ssp := &session.SessionProvider{
+		Config: cnf,
+	}
 	rtr := router.RouterProvider{
+		Storage: str,
 		Config:  cnf,
 		Sugar:   sgr,
 		Handler: hdp,
+		Session: ssp,
 	}
 
 	for _, test := range tests {
@@ -256,10 +267,15 @@ func TestShortenHandler(t *testing.T) {
 		Storage: str,
 		Sugar:   sgr,
 	}
+	ssp := &session.SessionProvider{
+		Config: cnf,
+	}
 	rtr := router.RouterProvider{
+		Storage: str,
 		Config:  cnf,
 		Sugar:   sgr,
 		Handler: hdp,
+		Session: ssp,
 	}
 
 	for _, test := range tests {

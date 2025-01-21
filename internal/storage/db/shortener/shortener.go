@@ -68,7 +68,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	}
 
 	query := "INSERT INTO shortener (short_url, original_url, user_id) VALUES ($1, $2, $3)"
-	_, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, rec.UserID)
+	result, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, rec.UserID)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -88,7 +88,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 
 		return nil, fmt.Errorf("failed to insert record into database: %w", err)
 	}
-	return nil, nil
+	return result, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {
@@ -128,14 +128,14 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 	defer func() {
 		err := tx.Rollback()
 		if err != nil {
-			log.Printf("failed to rollback transaction: %w", err.Error())
+			log.Printf("failed to rollback transaction: %s", err.Error())
 		}
 	}()
 
 	query := `INSERT INTO shortener (short_url, original_url, user_id) VALUES `
 	params := make([]interface{}, 0, len(rcs)*3)
 	for i, record := range rcs {
-		query += fmt.Sprintf("($%d,$%d),", i*2+1, i*2+2, i*2+3)
+		query += fmt.Sprintf("($%d,$%d,$%d),", i*2+1, i*2+2, i*2+3)
 		params = append(params, record.ShortURL, record.OriginalURL, record.UserID)
 	}
 

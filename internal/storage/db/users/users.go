@@ -14,7 +14,8 @@ type Storage struct {
 }
 
 func (s *Storage) Get(_ string) (interface{}, error) {
-	return nil, nil
+	var record models.UserRecord
+	return &record, nil
 }
 
 func (s *Storage) GetAll(_ interface{}) ([]interface{}, error) {
@@ -30,6 +31,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	var id int64
 	query := "INSERT INTO users DEFAULT VALUES RETURNING id"
 	err := s.DB.QueryRowx(query).Scan(&id)
+	fmt.Println("id", id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert record into database: %w", err)
 	}
