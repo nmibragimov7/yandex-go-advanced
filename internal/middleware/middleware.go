@@ -62,9 +62,13 @@ func AuthMiddleware(sgr *zap.SugaredLogger, str storage.Storage, ssn *session.Se
 			}
 
 			c.SetCookie(cookieName, token, 3600, "/", "", false, true)
-
 			c.Status(http.StatusOK)
-			c.Abort()
+			// message := models.Response{
+			// 	Message: http.StatusText(http.StatusUnauthorized),
+			// }
+			//
+			// c.JSON(http.StatusUnauthorized, message)
+			// c.Abort()
 			return
 		}
 
