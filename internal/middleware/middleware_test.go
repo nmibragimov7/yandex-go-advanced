@@ -13,7 +13,7 @@ import (
 )
 
 func TestGzipMiddleware(t *testing.T) {
-	sgr := logger.InitLogger()
+	sgr := logger.Init()
 
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)

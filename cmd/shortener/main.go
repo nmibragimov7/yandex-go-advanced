@@ -9,35 +9,38 @@ import (
 	"yandex-go-advanced/internal/storage"
 )
 
+const (
+	logKeyError = "error"
+)
+
 func main() {
-	cnf := config.Init().GetConfig()
-	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	cnf := config.Init()
+	sgr := logger.Init()
+
+	str, err := storage.Init(cnf)
 	if err != nil {
 		sgr.Errorw(
-			"",
+			"failed to init storage",
 			"error", err.Error(),
 		)
 	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sgr.Errorw(
+				"failed to close storage connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
 	hdp := &handlers.HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
 	}
-
-	defer func() {
-		err := str.Close()
-		if err != nil {
-			sgr.Errorw(
-				"",
-				"error", err.Error(),
-			)
-		}
-	}()
-
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
-		Storage: str,
 		Sugar:   sgr,
 		Handler: hdp,
 	}

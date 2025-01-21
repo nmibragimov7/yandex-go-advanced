@@ -10,10 +10,7 @@ type Config struct {
 	Server   *string
 	BaseURL  *string
 	FilePath *string
-}
-
-func (c *Config) GetConfig() *Config {
-	return c
+	DataBase *string
 }
 
 func Init() *Config {
@@ -21,17 +18,23 @@ func Init() *Config {
 		Server:   nil,
 		BaseURL:  nil,
 		FilePath: nil,
+		DataBase: nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
 
 	instance.Server = flags.String("a", ":8080", "Server URL")
 	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
-	instance.FilePath = flags.String("f", "./storage.txt", "File path")
+	instance.FilePath = flags.String("f", "./storage.txt", "File path") // ./storage.txt
+	instance.DataBase = flags.String(
+		"d",
+		"",
+		"Database URL",
+	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
-		log.Printf("ERROR: flag Parse: %s", err.Error())
+		log.Printf("failed to parse flags: %s", err.Error())
 	}
 
 	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
@@ -42,6 +45,9 @@ func Init() *Config {
 	}
 	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
 		instance.FilePath = &envFileStoragePath
+	}
+	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
+		instance.DataBase = &envDatabase
 	}
 
 	return &instance

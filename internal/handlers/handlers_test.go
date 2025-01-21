@@ -59,34 +59,33 @@ func TestMainPage(t *testing.T) {
 		},
 	}
 
-	cnf := config.Init().GetConfig()
-	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	cnf := config.Init()
+	sgr := logger.Init()
+
+	str, err := storage.Init(cnf)
 	if err != nil {
 		sgr.Errorw(
-			"",
+			"failed to init storage",
 			"error", err.Error(),
 		)
 	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sgr.Errorw(
+				"failed to close storage connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
 	hdp := &HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
 	}
-
-	defer func() {
-		err := str.Close()
-		if err != nil {
-			sgr.Errorw(
-				"",
-				"error", err.Error(),
-			)
-		}
-	}()
-
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
-		Storage: str,
 		Sugar:   sgr,
 		Handler: hdp,
 	}
@@ -100,7 +99,7 @@ func TestMainPage(t *testing.T) {
 			res, resBody := util.TestRequest(t, ts, test.method, test.path, bytes.NewBufferString(test.body), headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -113,7 +112,6 @@ func TestMainPage(t *testing.T) {
 		})
 	}
 }
-
 func TestIdPage(t *testing.T) {
 	type want struct {
 		code int
@@ -139,34 +137,33 @@ func TestIdPage(t *testing.T) {
 		},
 	}
 
-	cnf := config.Init().GetConfig()
-	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	cnf := config.Init()
+	sgr := logger.Init()
+
+	str, err := storage.Init(cnf)
 	if err != nil {
 		sgr.Errorw(
-			"",
+			"failed to init storage",
 			"error", err.Error(),
 		)
 	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sgr.Errorw(
+				"failed to close storage connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
 	hdp := &HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
 	}
-
-	defer func() {
-		err := str.Close()
-		if err != nil {
-			sgr.Errorw(
-				"",
-				"error", err.Error(),
-			)
-		}
-	}()
-
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
-		Storage: str,
 		Sugar:   sgr,
 		Handler: hdp,
 	}
@@ -180,7 +177,7 @@ func TestIdPage(t *testing.T) {
 			resp, resBody := util.TestRequest(t, ts, http.MethodPost, "/", bytes.NewBufferString("https://google.kz/"), headers)
 			defer func() {
 				if err := resp.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -192,7 +189,7 @@ func TestIdPage(t *testing.T) {
 			res, _ := util.TestRequest(t, ts, test.method, parsedURL.Path, nil, headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
@@ -200,7 +197,6 @@ func TestIdPage(t *testing.T) {
 		})
 	}
 }
-
 func TestShortenHandler(t *testing.T) {
 	type want struct {
 		code        int
@@ -235,34 +231,33 @@ func TestShortenHandler(t *testing.T) {
 		},
 	}
 
-	cnf := config.Init().GetConfig()
-	sgr := logger.InitLogger()
-	str, err := storage.NewFileStorage(*cnf.FilePath)
+	cnf := config.Init()
+	sgr := logger.Init()
+
+	str, err := storage.Init(cnf)
 	if err != nil {
 		sgr.Errorw(
-			"",
+			"failed to init storage",
 			"error", err.Error(),
 		)
 	}
+	defer func() {
+		err := str.Close()
+		if err != nil {
+			sgr.Errorw(
+				"failed to close storage connection",
+				logKeyError, err.Error(),
+			)
+		}
+	}()
+
 	hdp := &HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
 	}
-
-	defer func() {
-		err := str.Close()
-		if err != nil {
-			sgr.Errorw(
-				"",
-				"error", err.Error(),
-			)
-		}
-	}()
-
-	rtr := router.Provider{
+	rtr := router.RouterProvider{
 		Config:  cnf,
-		Storage: str,
 		Sugar:   sgr,
 		Handler: hdp,
 	}
@@ -280,7 +275,7 @@ func TestShortenHandler(t *testing.T) {
 			res, _ := util.TestRequest(t, ts, test.method, test.path, buf, headers)
 			defer func() {
 				if err := res.Body.Close(); err != nil {
-					log.Printf("Response body close: %s", err.Error())
+					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
 
