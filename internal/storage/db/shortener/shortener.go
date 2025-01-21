@@ -145,11 +145,12 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 			userID = record.UserID
 		}
 
-		query += fmt.Sprintf("($%d,$%d,$%d),", i*2+1, i*2+2, i*2+3)
+		query += fmt.Sprintf("($%d,$%d,$%d),", i*3+1, i*3+2, i*3+3)
 		params = append(params, record.ShortURL, record.OriginalURL, userID)
 	}
 
 	query = query[:len(query)-1]
+	fmt.Println("query", query)
 
 	_, err = tx.Exec(query, params...)
 	if err != nil {
