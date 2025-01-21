@@ -31,6 +31,7 @@ const (
 	contentLength   = "Content-Length"
 	applicationJSON = "application/json"
 	shortenerTable  = "shortener"
+	cookieName      = "user_token"
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
@@ -64,15 +65,20 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
-	id, ok := c.Get("user_id")
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
-	}
-	userID, ok = id.(int64)
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
+
+	cookie, err := c.Cookie(cookieName)
+	if err == nil && cookie != "" {
+		id, ok := c.Get("user_id")
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
+			return
+		}
+
+		userID, ok = id.(int64)
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			return
+		}
 	}
 
 	if c.Request.Method != http.MethodPost {
@@ -265,15 +271,20 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 }
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
-	id, ok := c.Get("user_id")
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
-	}
-	userID, ok = id.(int64)
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
+
+	cookie, err := c.Cookie(cookieName)
+	if err == nil && cookie != "" {
+		id, ok := c.Get("user_id")
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
+			return
+		}
+
+		userID, ok = id.(int64)
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			return
+		}
 	}
 
 	var body models.ShortenRequestBody
@@ -376,15 +387,20 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 }
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
-	id, ok := c.Get("user_id")
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
-	}
-	userID, ok = id.(int64)
-	if !ok {
-		sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
-		return
+
+	cookie, err := c.Cookie(cookieName)
+	if err == nil && cookie != "" {
+		id, ok := c.Get("user_id")
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
+			return
+		}
+
+		userID, ok = id.(int64)
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			return
+		}
 	}
 
 	var body []models.ShortenBatchRequest

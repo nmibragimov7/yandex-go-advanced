@@ -31,7 +31,6 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	var id int64
 	query := "INSERT INTO users DEFAULT VALUES RETURNING id"
 	err := s.DB.QueryRowx(query).Scan(&id)
-	fmt.Println("id", id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert record into database: %w", err)
 	}

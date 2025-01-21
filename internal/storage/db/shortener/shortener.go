@@ -67,8 +67,13 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 		return nil, errors.New("failed to parse record interface")
 	}
 
+	var userID interface{} = nil
+	if rec.UserID != 0 {
+		userID = rec.UserID
+	}
+
 	query := "INSERT INTO shortener (short_url, original_url, user_id) VALUES ($1, $2, $3)"
-	result, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, rec.UserID)
+	result, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, userID)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -135,8 +140,13 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 	query := `INSERT INTO shortener (short_url, original_url, user_id) VALUES `
 	params := make([]interface{}, 0, len(rcs)*3)
 	for i, record := range rcs {
+		var userID interface{} = nil
+		if record.UserID != 0 {
+			userID = record.UserID
+		}
+
 		query += fmt.Sprintf("($%d,$%d,$%d),", i*2+1, i*2+2, i*2+3)
-		params = append(params, record.ShortURL, record.OriginalURL, record.UserID)
+		params = append(params, record.ShortURL, record.OriginalURL, userID)
 	}
 
 	query = query[:len(query)-1]

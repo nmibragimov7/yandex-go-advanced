@@ -224,7 +224,7 @@ func TestShortenHandler(t *testing.T) {
 			name:   "positive shorten handler test #1",
 			method: http.MethodPost,
 			path:   "/api/shorten",
-			body:   models.ShortenRequestBody{URL: "https://practicum.yandex.ru/"},
+			body:   models.ShortenRequestBody{URL: "https://practicum.yandex.kz/"},
 			want: want{
 				code:        http.StatusCreated,
 				contentType: "application/json",
