@@ -54,12 +54,12 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal record: %w", err)
 	}
-	_, err = s.file.Write(append(data, '\n'))
+	n, err := s.file.Write(append(data, '\n'))
 	if err != nil {
 		return nil, fmt.Errorf("failed to write record to file: %w", err)
 	}
 
-	return nil, nil
+	return n, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {

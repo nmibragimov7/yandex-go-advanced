@@ -43,7 +43,8 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	}
 
 	s.storage[rec.ShortURL] = rec.OriginalURL
-	return nil, nil
+
+	return rec.OriginalURL, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {

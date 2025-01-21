@@ -76,40 +76,40 @@ func migrate(db *sqlx.DB) error {
 	return nil
 }
 
-//func bootstrap(db *sqlx.DB) error {
-//	tx, err := db.Begin()
-//	if err != nil {
-//		return fmt.Errorf("failed to start transaction: %w", err)
-//	}
-//	defer func() {
-//		err := tx.Rollback()
-//		if err != nil {
-//			log.Printf("failed to rollback transaction: %s", err.Error())
-//		}
-//	}()
+// func bootstrap(db *sqlx.DB) error {
+// 	tx, err := db.Begin()
+// 	if err != nil {
+// 		return fmt.Errorf("failed to start transaction: %w", err)
+// 	}
+// 	defer func() {
+// 		err := tx.Rollback()
+// 		if err != nil {
+// 			log.Printf("failed to rollback transaction: %s", err.Error())
+// 		}
+// 	}()
 //
-//	tables := []string{
-//		`CREATE TABLE IF NOT EXISTS users (
-//			id SERIAL PRIMARY KEY
-//		)`,
-//		`CREATE TABLE IF NOT EXISTS shortener (
-//			id SERIAL PRIMARY KEY,
-//			short_url VARCHAR(10) NOT NULL,
-//			original_url VARCHAR(100) UNIQUE NOT NULL,
-//    	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
-//		)`,
-//	}
+// 	tables := []string{
+// 		`CREATE TABLE IF NOT EXISTS users (
+// 			id SERIAL PRIMARY KEY
+// 		)`,
+// 		`CREATE TABLE IF NOT EXISTS shortener (
+// 			id SERIAL PRIMARY KEY,
+// 			short_url VARCHAR(10) NOT NULL,
+// 			original_url VARCHAR(100) UNIQUE NOT NULL,
+//     	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+// 		)`,
+// 	}
 //
-//	for _, query := range tables {
-//		if _, err := tx.Exec(query); err != nil {
-//			return fmt.Errorf("failed to create table query: %w", err)
-//		}
-//	}
+// 	for _, query := range tables {
+// 		if _, err := tx.Exec(query); err != nil {
+// 			return fmt.Errorf("failed to create table query: %w", err)
+// 		}
+// 	}
 //
-//	err = tx.Commit()
-//	if err != nil {
-//		return fmt.Errorf("failed to commit transaction: %w", err)
-//	}
+// 	err = tx.Commit()
+// 	if err != nil {
+// 		return fmt.Errorf("failed to commit transaction: %w", err)
+// 	}
 //
-//	return nil
-//}
+// 	return nil
+// }

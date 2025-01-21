@@ -32,6 +32,7 @@ const (
 	applicationJSON = "application/json"
 	shortenerTable  = "shortener"
 	cookieName      = "user_token"
+	keyUserID       = "user_id"
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
@@ -68,7 +69,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 
 	cookie, err := c.Cookie(cookieName)
 	if err == nil && cookie != "" {
-		id, ok := c.Get("user_id")
+		id, ok := c.Get(keyUserID)
 		if !ok {
 			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
 			return
@@ -274,7 +275,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 
 	cookie, err := c.Cookie(cookieName)
 	if err == nil && cookie != "" {
-		id, ok := c.Get("user_id")
+		id, ok := c.Get(keyUserID)
 		if !ok {
 			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
 			return
@@ -390,7 +391,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 
 	cookie, err := c.Cookie(cookieName)
 	if err == nil && cookie != "" {
-		id, ok := c.Get("user_id")
+		id, ok := c.Get(keyUserID)
 		if !ok {
 			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
 			return
@@ -439,7 +440,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	id, ok := c.Get("user_id")
+	id, ok := c.Get(keyUserID)
 	if !ok {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
