@@ -8,11 +8,13 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 )
 
 type Repository interface {
 	Get(key string) (interface{}, error)
-	Set(record interface{}) error
+	GetAll(key interface{}) ([]interface{}, error)
+	Set(record interface{}) (interface{}, error)
 	SetAll(records []interface{}) error
 	Close() error
 	Ping(ctx context.Context) error
@@ -30,12 +32,21 @@ func Init(path string) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to ping database connection: %w", err)
 	}
 
-	err = bootstrap(db)
+	err = migrate(db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create table queries: %w", err)
 	}
 
 	return db, nil
+}
+
+func migrate(db *sqlx.DB) error {
+	err := goose.Up(db.DB, "./migrations")
+	if err != nil {
+		return fmt.Errorf("failed to migrate: %w", err)
+	}
+
+	return nil
 }
 
 func bootstrap(db *sqlx.DB) error {
@@ -51,10 +62,14 @@ func bootstrap(db *sqlx.DB) error {
 	}()
 
 	tables := []string{
+		`CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY
+		)`,
 		`CREATE TABLE IF NOT EXISTS shortener (
 			id SERIAL PRIMARY KEY,
 			short_url VARCHAR(10) NOT NULL,
-			original_url VARCHAR(100) UNIQUE NOT NULL
+			original_url VARCHAR(100) UNIQUE NOT NULL,
+    	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
 		)`,
 	}
 

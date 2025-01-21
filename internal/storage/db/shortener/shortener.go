@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 	"yandex-go-advanced/internal/models"
-	"yandex-go-advanced/internal/storage/db"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jmoiron/sqlx"
@@ -30,14 +29,46 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return &record, nil
 }
 
-func (s *Storage) Set(record interface{}) error {
-	rec, ok := record.(*models.ShortenRecord)
-	if !ok {
-		return errors.New("failed to parse record interface")
+func (s *Storage) GetAll(key interface{}) ([]interface{}, error) {
+	var records []interface{}
+
+	rows, err := s.DB.Query("SELECT short_url, original_url FROM shortener WHERE user_id = $1", key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query records: %w", err)
+	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Printf("failed to close rows: %s", err.Error())
+		}
+	}()
+
+	for rows.Next() {
+		var record models.ShortenRecord
+
+		err := rows.Scan(&record.ShortURL, &record.OriginalURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan record: %w", err)
+		}
+
+		records = append(records, record)
 	}
 
-	query := "INSERT INTO shortener (short_url, original_url) VALUES ($1, $2)"
-	_, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL)
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan records: %w", err)
+	}
+
+	return records, nil
+}
+
+func (s *Storage) Set(record interface{}) (interface{}, error) {
+	rec, ok := record.(*models.ShortenRecord)
+	if !ok {
+		return nil, errors.New("failed to parse record interface")
+	}
+
+	query := "INSERT INTO shortener (short_url, original_url, user_id) VALUES ($1, $2, $3)"
+	_, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, rec.UserID)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -45,19 +76,19 @@ func (s *Storage) Set(record interface{}) error {
 			query = "SELECT short_url FROM shortener WHERE original_url = $1"
 			errs := s.DB.QueryRow(query, rec.OriginalURL).Scan(&shortURL)
 			if errs != nil {
-				return fmt.Errorf("failed to get record from database: %w", err)
+				return nil, fmt.Errorf("failed to get record from database: %w", err)
 			}
 
-			return fmt.Errorf("shortener already exists: %w", db.NewDuplicateError(
+			return nil, fmt.Errorf("shortener already exists: %w", NewDuplicateError(
 				shortURL,
 				pgerrcode.UniqueViolation,
 				err,
 			))
 		}
 
-		return fmt.Errorf("failed to insert record into database: %w", err)
+		return nil, fmt.Errorf("failed to insert record into database: %w", err)
 	}
-	return nil
+	return nil, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {
@@ -97,15 +128,15 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 	defer func() {
 		err := tx.Rollback()
 		if err != nil {
-			log.Printf("failed to rollback transaction: %s", err.Error())
+			log.Printf("failed to rollback transaction: %w", err.Error())
 		}
 	}()
 
-	query := `INSERT INTO shortener (short_url, original_url) VALUES `
-	params := make([]interface{}, 0, len(rcs)*2)
+	query := `INSERT INTO shortener (short_url, original_url, user_id) VALUES `
+	params := make([]interface{}, 0, len(rcs)*3)
 	for i, record := range rcs {
-		query += fmt.Sprintf("($%d,$%d),", i*2+1, i*2+2)
-		params = append(params, record.ShortURL, record.OriginalURL)
+		query += fmt.Sprintf("($%d,$%d),", i*2+1, i*2+2, i*2+3)
+		params = append(params, record.ShortURL, record.OriginalURL, record.UserID)
 	}
 
 	query = query[:len(query)-1]

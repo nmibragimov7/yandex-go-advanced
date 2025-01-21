@@ -15,7 +15,10 @@ type ShortenResponseSuccess struct {
 type ShortenRecord struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      int64  `json:"user_id"`
 }
+
+type UserRecord struct{}
 
 type ShortenBatchRequest struct {
 	CorrelationID string `json:"correlation_id"`

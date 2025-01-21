@@ -7,18 +7,20 @@ import (
 )
 
 type Config struct {
-	Server   *string
-	BaseURL  *string
-	FilePath *string
-	DataBase *string
+	Server     *string
+	BaseURL    *string
+	FilePath   *string
+	DataBase   *string
+	SercretKey *string
 }
 
 func Init() *Config {
 	instance := Config{
-		Server:   nil,
-		BaseURL:  nil,
-		FilePath: nil,
-		DataBase: nil,
+		Server:     nil,
+		BaseURL:    nil,
+		FilePath:   nil,
+		DataBase:   nil,
+		SercretKey: nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
@@ -28,9 +30,10 @@ func Init() *Config {
 	instance.FilePath = flags.String("f", "./storage.txt", "File path") // ./storage.txt
 	instance.DataBase = flags.String(
 		"d",
-		"",
+		"host=localhost user=postgres password=admin dbname=postgres sslmode=disable",
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
+	instance.SercretKey = flags.String("s", "secret_key", "Cookie secret key")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -48,6 +51,9 @@ func Init() *Config {
 	}
 	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		instance.DataBase = &envDatabase
+	}
+	if envDatabase, ok := os.LookupEnv("SECRET_KEY"); ok {
+		instance.SercretKey = &envDatabase
 	}
 
 	return &instance

@@ -10,4 +10,5 @@ type Handler interface {
 	ShortenHandler(c *gin.Context)
 	PingHandler(c *gin.Context)
 	ShortenBatchHandler(c *gin.Context)
+	UserUrlsHandler(c *gin.Context)
 }

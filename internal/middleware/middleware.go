@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/session"
+	"yandex-go-advanced/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -18,7 +20,76 @@ import (
 
 const (
 	logKeyError = "error"
+	cookieName  = "user_token"
 )
+
+func AuthMiddleware(sgr *zap.SugaredLogger, str storage.Storage, ssn *session.SessionProvider) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cookie, err := c.Cookie(cookieName)
+		if err != nil || cookie == "" {
+			record := &models.UserRecord{}
+
+			id, err := str.Set("users", record)
+			if err != nil {
+				sgr.Errorw(
+					"failed to save user record",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusInternalServerError),
+				}
+
+				c.JSON(http.StatusInternalServerError, message)
+				c.Abort()
+				return
+			}
+
+			token, err := ssn.GenerateToken(id.(int64))
+			if err != nil {
+				sgr.Errorw(
+					"failed to generate token",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusInternalServerError),
+				}
+
+				c.JSON(http.StatusInternalServerError, message)
+				c.Abort()
+				return
+			}
+
+			c.SetCookie(cookieName, token, 3600, "/", "", false, true)
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+
+			c.JSON(http.StatusUnauthorized, message)
+			c.Abort()
+			return
+		}
+
+		userID, err := ssn.ValidateToken(cookie)
+		if err != nil {
+			sgr.Errorw(
+				"failed to validate token",
+				logKeyError, err.Error(),
+			)
+
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+
+			c.JSON(http.StatusUnauthorized, message)
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", userID)
+	}
+}
 
 type gzipProvider struct {
 	writer gin.ResponseWriter
