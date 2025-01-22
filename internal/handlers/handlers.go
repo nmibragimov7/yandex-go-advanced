@@ -490,7 +490,7 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 			return
 		}
 		records = append(records, map[string]interface{}{
-			"short_url":    value.ShortURL,
+			"short_url":    *p.Config.BaseURL + "/" + value.ShortURL,
 			"original_url": value.OriginalURL,
 		})
 	}
