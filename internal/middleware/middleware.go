@@ -62,33 +62,10 @@ func AuthMiddleware(sgr *zap.SugaredLogger, str storage.Storage, ssn *session.Se
 			}
 
 			c.SetCookie(cookieName, token, 3600, "/", "", false, true)
-			c.Status(http.StatusOK)
-			// message := models.Response{
-			// 	Message: http.StatusText(http.StatusUnauthorized),
-			// }
-			//
-			// c.JSON(http.StatusUnauthorized, message)
-			// c.Abort()
-			return
+			c.Request.Header.Set("Cookie", fmt.Sprintf("%s=%s", cookieName, token))
 		}
 
-		userID, err := ssn.ValidateToken(cookie)
-		if err != nil {
-			sgr.Errorw(
-				"failed to validate token",
-				logKeyError, err.Error(),
-			)
-
-			message := models.Response{
-				Message: http.StatusText(http.StatusUnauthorized),
-			}
-
-			c.JSON(http.StatusUnauthorized, message)
-			c.Abort()
-			return
-		}
-
-		c.Set("user_id", userID)
+		c.Next()
 	}
 }
 

@@ -45,13 +45,14 @@ func run() error {
 		}
 	}()
 
+	ssp := &session.SessionProvider{
+		Config: cnf,
+	}
 	hdp := &handlers.HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
-	}
-	ssp := &session.SessionProvider{
-		Config: cnf,
+		Session: ssp,
 	}
 	rtr := router.RouterProvider{
 		Storage: str,

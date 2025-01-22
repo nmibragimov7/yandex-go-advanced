@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"
 	"yandex-go-advanced/internal/storage/db/shortener"
 	"yandex-go-advanced/internal/util"
@@ -21,6 +22,7 @@ type HandlerProvider struct {
 	Config  *config.Config
 	Storage storage.Storage
 	Sugar   *zap.SugaredLogger
+	Session *session.SessionProvider
 }
 
 const (
@@ -31,8 +33,6 @@ const (
 	contentLength   = "Content-Length"
 	applicationJSON = "application/json"
 	shortenerTable  = "shortener"
-	cookieName      = "user_token"
-	keyUserID       = "user_id"
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
@@ -66,18 +66,21 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
 
-	cookie, err := c.Cookie(cookieName)
-	if err == nil && cookie != "" {
-		id, ok := c.Get(keyUserID)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
-			return
-		}
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
 
-		userID, ok = id.(int64)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			c.JSON(http.StatusUnauthorized, message)
 			return
 		}
 	}
@@ -119,6 +122,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 	}
 
 	url := string(body)
+
 	key := util.GetKey()
 	record := &models.ShortenRecord{
 		ShortURL:    key,
@@ -272,18 +276,21 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 }
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
 
-	cookie, err := c.Cookie(cookieName)
-	if err == nil && cookie != "" {
-		id, ok := c.Get(keyUserID)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
-			return
-		}
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
 
-		userID, ok = id.(int64)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			c.JSON(http.StatusUnauthorized, message)
 			return
 		}
 	}
@@ -388,18 +395,21 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 }
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
 
-	cookie, err := c.Cookie(cookieName)
-	if err == nil && cookie != "" {
-		id, ok := c.Get(keyUserID)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user_id is not context"))
-			return
-		}
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
 
-		userID, ok = id.(int64)
-		if !ok {
-			sendErrorResponse(c, p.Sugar, errors.New("user id is not int64"))
+			c.JSON(http.StatusUnauthorized, message)
 			return
 		}
 	}
@@ -440,13 +450,13 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	id, ok := c.Get(keyUserID)
-	if !ok {
+	userID, err := p.Session.ParseToken(c)
+	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
 			logKeyIP, c.ClientIP(),
 		).Error(
-			errors.New("user id is empty"),
+			err,
 		)
 
 		message := models.Response{
@@ -457,7 +467,7 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 		return
 	}
 
-	rcs, err := p.Storage.GetAll(shortenerTable, id)
+	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return
