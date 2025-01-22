@@ -467,6 +467,13 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 		return
 	}
 
+	token, _ := c.Cookie("user_token")
+	p.Sugar.Infow(
+		"user ID info",
+		"user_id", userID,
+		"token", token,
+	)
+
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
 		sendErrorResponse(c, p.Sugar, err)
