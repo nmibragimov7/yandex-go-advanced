@@ -35,15 +35,18 @@ func (p *RouterProvider) Router() *gin.Engine {
 	}
 
 	r.Use(middlewares...)
-	if *p.Config.DataBase != "" {
-		r.Use(middleware.AuthMiddleware(sugarWithCtx, p.Storage, p.Session))
-	}
 
-	r.POST("/", p.Handler.MainPage)
-	r.POST("/api/shorten", p.Handler.ShortenHandler)
-	r.GET("/ping", p.Handler.PingHandler)
-	r.POST("/api/shorten/batch", p.Handler.ShortenBatchHandler)
+	atp := &middleware.AuthProvider{
+		Storage: p.Storage,
+		Config:  p.Config,
+		Sugar:   p.Sugar,
+		Session: p.Session,
+	}
+	r.POST("/", middleware.AuthMiddleware(atp), p.Handler.MainPage)
+	r.POST("/api/shorten", middleware.AuthMiddleware(atp), p.Handler.ShortenHandler)
+	r.POST("/api/shorten/batch", middleware.AuthMiddleware(atp), p.Handler.ShortenBatchHandler)
 	r.GET("/api/user/urls", p.Handler.UserUrlsHandler)
+	r.GET("/ping", p.Handler.PingHandler)
 	r.GET("/:id", p.Handler.IDPage)
 
 	return r

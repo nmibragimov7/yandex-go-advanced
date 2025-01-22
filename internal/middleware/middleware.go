@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"
@@ -23,15 +24,27 @@ const (
 	cookieName  = "user_token"
 )
 
-func AuthMiddleware(sgr *zap.SugaredLogger, str storage.Storage, ssn *session.SessionProvider) gin.HandlerFunc {
+type AuthProvider struct {
+	Sugar   *zap.SugaredLogger
+	Storage storage.Storage
+	Session *session.SessionProvider
+	Config  *config.Config
+}
+
+func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if *p.Config.DataBase == "" {
+			c.Next()
+			return
+		}
+
 		cookie, err := c.Cookie(cookieName)
 		if err != nil || cookie == "" {
 			record := &models.UserRecord{}
 
-			id, err := str.Set("users", record)
+			id, err := p.Storage.Set("users", record)
 			if err != nil {
-				sgr.Errorw(
+				p.Sugar.Errorw(
 					"failed to save user record",
 					logKeyError, err.Error(),
 				)
@@ -45,9 +58,9 @@ func AuthMiddleware(sgr *zap.SugaredLogger, str storage.Storage, ssn *session.Se
 				return
 			}
 
-			token, err := ssn.GenerateToken(id.(int64))
+			token, err := p.Session.GenerateToken(id.(int64))
 			if err != nil {
-				sgr.Errorw(
+				p.Sugar.Errorw(
 					"failed to generate token",
 					logKeyError, err.Error(),
 				)
