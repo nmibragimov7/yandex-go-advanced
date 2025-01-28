@@ -25,6 +25,12 @@ func main() {
 func run() error {
 	cnf := config.Init()
 	sgr := logger.Init()
+	defer func() {
+		err := sgr.Sync()
+		if err != nil {
+			log.Printf("failed to sync logger: %s", err.Error())
+		}
+	}()
 
 	str, err := storage.Init(cnf)
 	if err != nil {

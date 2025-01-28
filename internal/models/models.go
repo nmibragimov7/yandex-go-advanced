@@ -16,6 +16,7 @@ type ShortenRecord struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 	UserID      int64  `json:"user_id"`
+	DeletedFlag bool   `json:"is_deleted"`
 }
 
 type UserRecord struct{}
@@ -28,4 +29,9 @@ type ShortenBatchRequest struct {
 type ShortenBatchResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
+}
+
+type ShortenBatchUpdateRequest struct {
+	UserID   int64  `json:"user_id"`
+	ShortURL string `json:"short_url"`
 }

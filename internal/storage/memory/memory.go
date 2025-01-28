@@ -72,6 +72,8 @@ func (s *Storage) Close() error { return nil }
 
 func (s *Storage) Ping(_ context.Context) error { return nil }
 
+func (s *Storage) UpdateAll(_ chan struct{}, _ ...chan interface{}) { return }
+
 func Init() *Storage {
 	return &Storage{
 		storage: make(map[string]string),

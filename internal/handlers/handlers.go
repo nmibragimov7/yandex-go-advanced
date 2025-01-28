@@ -257,6 +257,13 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(record)
+
+	if record.DeletedFlag {
+		c.Writer.WriteHeader(http.StatusGone)
+		return
+	}
+
 	if record.OriginalURL == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
@@ -504,4 +511,67 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, records)
+}
+func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
+	userID, err := p.Session.ParseToken(c)
+	if err != nil {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
+		)
+
+		message := models.Response{
+			Message: http.StatusText(http.StatusUnauthorized),
+		}
+
+		c.JSON(http.StatusUnauthorized, message)
+		return
+	}
+
+	token, _ := c.Cookie("user_token")
+	p.Sugar.Infow(
+		"user ID info",
+		"user_id", userID,
+		"token", token,
+	)
+
+	var body []string
+	bytes, err := c.GetRawData()
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+	if err := json.Unmarshal(bytes, &body); err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	generate := func(userID int64, key string) chan interface{} {
+		out := make(chan interface{}, 1)
+		go func() {
+			defer close(out)
+			val := &models.ShortenBatchUpdateRequest{
+				UserID:   userID,
+				ShortURL: key,
+			}
+			out <- val
+		}()
+
+		return out
+	}
+
+	values := make([]chan interface{}, 0, len(body))
+	for _, value := range body {
+		values = append(values, generate(userID, value))
+	}
+
+	go func() {
+		done := make(chan struct{})
+		defer close(done)
+		p.Storage.UpdateAll(shortenerTable, done, values...)
+	}()
+
+	c.Status(http.StatusAccepted)
 }

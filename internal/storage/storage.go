@@ -16,6 +16,7 @@ type Storage interface {
 	GetAll(entity string, key interface{}) ([]interface{}, error)
 	Set(entity string, record interface{}) (interface{}, error)
 	SetAll(entity string, records []interface{}) error
+	UpdateAll(entity string, done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
 }
@@ -135,6 +136,12 @@ func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	return nil
 }
 
+func (p *StorageProvider) UpdateAll(entity string, done chan struct{}, channels ...chan interface{}) {
+	if storage, ok := p.db[entity]; ok {
+		storage.UpdateAll(done, channels...)
+	}
+}
+
 func (p *StorageProvider) Close() error {
 	if p.file != nil {
 		if err := p.file.Close(); err != nil {
@@ -181,7 +188,11 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 
 		if database != nil {
-			dbStorages["shortener"] = &shortener.Storage{DB: database}
+			dbStorages["shortener"] = &shortener.Storage{DB: database, Channel: make(chan interface{})}
+			go func() {
+				shortener.Flush(dbStorages["shortener"].(*shortener.Storage))
+			}()
+
 			dbStorages["users"] = &users.Storage{DB: database}
 		}
 	}

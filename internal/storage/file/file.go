@@ -96,6 +96,8 @@ func (s *Storage) Close() error {
 
 func (s *Storage) Ping(_ context.Context) error { return nil }
 
+func (s *Storage) UpdateAll(_ chan struct{}, _ ...chan interface{}) { return }
+
 func Init(path string) (*Storage, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
