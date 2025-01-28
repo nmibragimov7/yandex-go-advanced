@@ -190,7 +190,10 @@ func Init(cnf *config.Config) (Storage, error) {
 		if database != nil {
 			dbStorages["shortener"] = &shortener.Storage{DB: database, Channel: make(chan interface{})}
 			go func() {
-				shortener.Flush(dbStorages["shortener"].(*shortener.Storage))
+				str, ok := dbStorages["shortener"].(*shortener.Storage)
+				if ok {
+					shortener.Flush(str)
+				}
 			}()
 
 			dbStorages["users"] = &users.Storage{DB: database}

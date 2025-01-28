@@ -57,4 +57,4 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) UpdateAll(_ chan struct{}, _ ...chan interface{}) { return }
+func (s *Storage) UpdateAll(_ chan struct{}, _ ...chan interface{}) {}

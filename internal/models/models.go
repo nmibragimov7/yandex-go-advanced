@@ -32,6 +32,6 @@ type ShortenBatchResponse struct {
 }
 
 type ShortenBatchUpdateRequest struct {
-	UserID   int64  `json:"user_id"`
 	ShortURL string `json:"short_url"`
+	UserID   int64  `json:"user_id"`
 }

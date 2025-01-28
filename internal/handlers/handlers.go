@@ -257,8 +257,6 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(record)
-
 	if record.DeletedFlag {
 		c.Writer.WriteHeader(http.StatusGone)
 		return
