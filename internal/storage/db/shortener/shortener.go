@@ -132,6 +132,13 @@ func (s *Storage) UpdateBatches(records []interface{}) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Printf("failed to rollback transaction: %s", err.Error())
+		}
+	}()
+
 	query := `UPDATE shortener SET is_deleted = true WHERE (short_url, user_id) IN (`
 	params := make([]interface{}, 0, len(rcs)*2)
 	for i, record := range rcs {
@@ -143,11 +150,6 @@ func (s *Storage) UpdateBatches(records []interface{}) error {
 
 	_, err = tx.Exec(query, params...)
 	if err != nil {
-		err := tx.Rollback()
-		if err != nil {
-			log.Printf("failed to rollback transaction: %s", err.Error())
-		}
-
 		return fmt.Errorf("failed to update records in database: %w", err)
 	}
 
@@ -194,6 +196,13 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Printf("failed to rollback transaction: %s", err.Error())
+		}
+	}()
+
 	query := `INSERT INTO shortener (short_url, original_url, user_id) VALUES `
 	params := make([]interface{}, 0, len(rcs)*3)
 	for i, record := range rcs {
@@ -210,10 +219,6 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 
 	_, err = tx.Exec(query, params...)
 	if err != nil {
-		err := tx.Rollback()
-		if err != nil {
-			log.Printf("failed to rollback transaction: %s", err.Error())
-		}
 		return fmt.Errorf("failed to insert records into database: %w", err)
 	}
 
