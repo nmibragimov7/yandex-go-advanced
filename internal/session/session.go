@@ -57,9 +57,32 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	if !token.Valid {
 		return 0, jwt.ErrTokenNotValidYet
 	}
+
 	if claims.UserID == 0 {
 		return 0, jwt.ErrInvalidKey
 	}
 
 	return claims.UserID, nil
+}
+
+func (p *SessionProvider) CheckCookie(cookie string) error {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(cookie, claims,
+		func(t *jwt.Token) (interface{}, error) {
+			return []byte(*p.SercretKey), nil
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	if !token.Valid {
+		return jwt.ErrTokenNotValidYet
+	}
+
+	if claims.UserID == 0 {
+		return jwt.ErrInvalidKey
+	}
+
+	return nil
 }

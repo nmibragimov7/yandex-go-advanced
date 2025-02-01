@@ -246,7 +246,7 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) UpdateAll(done chan struct{}, channels ...chan interface{}) {
+func (s *Storage) AddToChannel(done chan struct{}, channels ...chan interface{}) {
 	for _, channel := range channels {
 		select {
 		case <-done:

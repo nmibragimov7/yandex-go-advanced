@@ -16,7 +16,7 @@ type Storage interface {
 	GetAll(entity string, key interface{}) ([]interface{}, error)
 	Set(entity string, record interface{}) (interface{}, error)
 	SetAll(entity string, records []interface{}) error
-	UpdateAll(entity string, done chan struct{}, channels ...chan interface{})
+	AddToChannel(entity string, done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
 }
@@ -136,9 +136,9 @@ func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	return nil
 }
 
-func (p *StorageProvider) UpdateAll(entity string, done chan struct{}, channels ...chan interface{}) {
+func (p *StorageProvider) AddToChannel(entity string, done chan struct{}, channels ...chan interface{}) {
 	if storage, ok := p.db[entity]; ok {
-		storage.UpdateAll(done, channels...)
+		storage.AddToChannel(done, channels...)
 	}
 }
 

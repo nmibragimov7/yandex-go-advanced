@@ -78,6 +78,25 @@ func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 			c.Request.Header.Set("Cookie", fmt.Sprintf("%s=%s", cookieName, token))
 		}
 
+		if cookie != "" {
+			err = p.Session.CheckCookie(cookie)
+			if err != nil {
+				p.Sugar.Errorw(
+					"failed to check token",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusUnauthorized),
+				}
+
+				c.JSON(http.StatusUnauthorized, message)
+				c.Abort()
+				return
+			}
+		}
+
+		c.Set("cookie", cookie)
 		c.Next()
 	}
 }

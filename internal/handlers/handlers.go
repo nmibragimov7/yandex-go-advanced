@@ -472,7 +472,7 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Cookie("user_token")
+	token, _ := c.Get("cookie")
 	p.Sugar.Infow(
 		"user ID info",
 		"user_id", userID,
@@ -528,7 +528,7 @@ func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Cookie("user_token")
+	token, _ := c.Get("cookie")
 	p.Sugar.Infow(
 		"user ID info",
 		"user_id", userID,
@@ -551,8 +551,8 @@ func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
 		go func() {
 			defer close(out)
 			val := &models.ShortenBatchUpdateRequest{
-				UserID:   userID,
 				ShortURL: key,
+				UserID:   userID,
 			}
 			out <- val
 		}()
@@ -568,7 +568,7 @@ func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
 	go func() {
 		done := make(chan struct{})
 		defer close(done)
-		p.Storage.UpdateAll(shortenerTable, done, values...)
+		p.Storage.AddToChannel(shortenerTable, done, values...)
 	}()
 
 	c.Status(http.StatusAccepted)

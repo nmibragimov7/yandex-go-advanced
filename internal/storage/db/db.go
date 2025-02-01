@@ -18,7 +18,7 @@ type Repository interface {
 	GetAll(key interface{}) ([]interface{}, error)
 	Set(record interface{}) (interface{}, error)
 	SetAll(records []interface{}) error
-	UpdateAll(done chan struct{}, channels ...chan interface{})
+	AddToChannel(done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
 }
