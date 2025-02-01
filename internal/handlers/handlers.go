@@ -472,13 +472,6 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 		return
 	}
 
-	token, _ := c.Get("cookie")
-	p.Sugar.Infow(
-		"user ID info",
-		"user_id", userID,
-		"token", token,
-	)
-
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
 		sendErrorResponse(c, p.Sugar, err)
@@ -527,13 +520,6 @@ func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, message)
 		return
 	}
-
-	token, _ := c.Get("cookie")
-	p.Sugar.Infow(
-		"user ID info",
-		"user_id", userID,
-		"token", token,
-	)
 
 	var body []string
 	bytes, err := c.GetRawData()
