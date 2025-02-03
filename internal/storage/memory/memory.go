@@ -29,17 +29,22 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, errors.New("failed to find record")
 }
 
-func (s *Storage) Set(record interface{}) error {
+func (s *Storage) GetAll(_ interface{}) ([]interface{}, error) {
+	return nil, nil
+}
+
+func (s *Storage) Set(record interface{}) (interface{}, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
-		return errors.New("failed to parse record interface")
+		return nil, errors.New("failed to parse record interface")
 	}
 
 	s.storage[rec.ShortURL] = rec.OriginalURL
-	return nil
+
+	return rec.OriginalURL, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {
@@ -66,6 +71,8 @@ func (s *Storage) SetAll(records []interface{}) error {
 func (s *Storage) Close() error { return nil }
 
 func (s *Storage) Ping(_ context.Context) error { return nil }
+
+func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
 func Init() *Storage {
 	return &Storage{

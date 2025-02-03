@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/router"
+	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"
 )
 
@@ -14,8 +17,20 @@ const (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	cnf := config.Init()
 	sgr := logger.Init()
+	defer func() {
+		err := sgr.Sync()
+		if err != nil {
+			log.Printf("failed to sync logger: %s", err.Error())
+		}
+	}()
 
 	str, err := storage.Init(cnf)
 	if err != nil {
@@ -23,6 +38,8 @@ func main() {
 			"failed to init storage",
 			"error", err.Error(),
 		)
+
+		return fmt.Errorf("failed to init storage: %w", err)
 	}
 	defer func() {
 		err := str.Close()
@@ -34,16 +51,24 @@ func main() {
 		}
 	}()
 
+	ssp := &session.SessionProvider{
+		Config: cnf,
+	}
 	hdp := &handlers.HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
+		Session: ssp,
 	}
 	rtr := router.RouterProvider{
+		Storage: str,
 		Config:  cnf,
 		Sugar:   sgr,
 		Handler: hdp,
+		Session: ssp,
 	}
 
 	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))
+
+	return nil
 }

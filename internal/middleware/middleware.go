@@ -10,7 +10,10 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/session"
+	"yandex-go-advanced/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -18,7 +21,85 @@ import (
 
 const (
 	logKeyError = "error"
+	cookieName  = "user_token"
 )
+
+type AuthProvider struct {
+	Sugar   *zap.SugaredLogger
+	Storage storage.Storage
+	Session *session.SessionProvider
+	Config  *config.Config
+}
+
+func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if *p.Config.DataBase == "" {
+			c.Next()
+			return
+		}
+
+		cookie, err := c.Cookie(cookieName)
+		if err != nil || cookie == "" {
+			record := &models.UserRecord{}
+
+			id, err := p.Storage.Set("users", record)
+			if err != nil {
+				p.Sugar.Errorw(
+					"failed to save user record",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusInternalServerError),
+				}
+
+				c.JSON(http.StatusInternalServerError, message)
+				c.Abort()
+				return
+			}
+
+			token, err := p.Session.GenerateToken(id.(int64))
+			if err != nil {
+				p.Sugar.Errorw(
+					"failed to generate token",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusInternalServerError),
+				}
+
+				c.JSON(http.StatusInternalServerError, message)
+				c.Abort()
+				return
+			}
+
+			c.SetCookie(cookieName, token, 3600, "/", "", false, true)
+			c.Request.Header.Set("Cookie", fmt.Sprintf("%s=%s", cookieName, token))
+		}
+
+		if cookie != "" {
+			err = p.Session.CheckCookie(cookie)
+			if err != nil {
+				p.Sugar.Errorw(
+					"failed to check token",
+					logKeyError, err.Error(),
+				)
+
+				message := models.Response{
+					Message: http.StatusText(http.StatusUnauthorized),
+				}
+
+				c.JSON(http.StatusUnauthorized, message)
+				c.Abort()
+				return
+			}
+		}
+
+		c.Set("cookie", cookie)
+		c.Next()
+	}
+}
 
 type gzipProvider struct {
 	writer gin.ResponseWriter

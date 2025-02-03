@@ -6,14 +6,17 @@ import (
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
 	"yandex-go-advanced/internal/storage/db/shortener"
+	"yandex-go-advanced/internal/storage/db/users"
 	"yandex-go-advanced/internal/storage/file"
 	"yandex-go-advanced/internal/storage/memory"
 )
 
 type Storage interface {
 	Get(entity string, key string) (interface{}, error)
-	Set(entity string, record interface{}) error
+	GetAll(entity string, key interface{}) ([]interface{}, error)
+	Set(entity string, record interface{}) (interface{}, error)
 	SetAll(entity string, records []interface{}) error
+	AddToChannel(entity string, done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
 }
@@ -51,31 +54,58 @@ func (p *StorageProvider) Get(entity string, key string) (interface{}, error) {
 	return value, nil
 }
 
-func (p *StorageProvider) Set(entity string, record interface{}) error {
+func (p *StorageProvider) GetAll(entity string, key interface{}) ([]interface{}, error) {
 	if storage, ok := p.db[entity]; ok {
-		err := storage.Set(record)
+		value, err := storage.GetAll(key)
 		if err != nil {
-			return fmt.Errorf("failed to save record to database: %w", err)
+			return nil, fmt.Errorf("failed to get records from database: %w", err)
 		}
 
-		return nil
+		return value, nil
 	}
 
 	if p.file != nil {
-		err := p.file.Set(record)
+		value, err := p.file.GetAll(key)
 		if err != nil {
-			return fmt.Errorf("failed to save record to file: %w", err)
+			return nil, fmt.Errorf("failed to get records from file: %w", err)
 		}
 
-		return nil
+		return value, nil
 	}
 
-	err := p.memory.Set(record)
+	value, err := p.memory.GetAll(key)
 	if err != nil {
-		return fmt.Errorf("failed to save record to memory: %w", err)
+		return nil, fmt.Errorf("failed to get records from file: %w", err)
 	}
 
-	return nil
+	return value, nil
+}
+
+func (p *StorageProvider) Set(entity string, record interface{}) (interface{}, error) {
+	if storage, ok := p.db[entity]; ok {
+		data, err := storage.Set(record)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save record to database: %w", err)
+		}
+
+		return data, nil
+	}
+
+	if p.file != nil {
+		data, err := p.file.Set(record)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save record to file: %w", err)
+		}
+
+		return data, nil
+	}
+
+	data, err := p.memory.Set(record)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save record to memory: %w", err)
+	}
+
+	return data, nil
 }
 
 func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
@@ -104,6 +134,12 @@ func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	}
 
 	return nil
+}
+
+func (p *StorageProvider) AddToChannel(entity string, done chan struct{}, channels ...chan interface{}) {
+	if storage, ok := p.db[entity]; ok {
+		storage.AddToChannel(done, channels...)
+	}
 }
 
 func (p *StorageProvider) Close() error {
@@ -152,7 +188,15 @@ func Init(cnf *config.Config) (Storage, error) {
 		}
 
 		if database != nil {
-			dbStorages["shortener"] = &shortener.Storage{DB: database}
+			dbStorages["shortener"] = &shortener.Storage{DB: database, Channel: make(chan interface{})}
+			go func() {
+				str, ok := dbStorages["shortener"].(*shortener.Storage)
+				if ok {
+					shortener.Flush(str)
+				}
+			}()
+
+			dbStorages["users"] = &users.Storage{DB: database}
 		}
 	}
 

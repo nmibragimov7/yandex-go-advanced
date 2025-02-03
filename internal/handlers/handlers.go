@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
+	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"
-	"yandex-go-advanced/internal/storage/db"
+	"yandex-go-advanced/internal/storage/db/shortener"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ type HandlerProvider struct {
 	Config  *config.Config
 	Storage storage.Storage
 	Sugar   *zap.SugaredLogger
+	Session *session.SessionProvider
 }
 
 const (
@@ -63,6 +65,26 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 }
 
 func (p *HandlerProvider) MainPage(c *gin.Context) {
+	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
+
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+
+			c.JSON(http.StatusUnauthorized, message)
+			return
+		}
+	}
+
 	if c.Request.Method != http.MethodPost {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
@@ -100,13 +122,15 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 	}
 
 	url := string(body)
+
 	key := util.GetKey()
 	record := &models.ShortenRecord{
 		ShortURL:    key,
 		OriginalURL: url,
+		UserID:      userID,
 	}
 
-	err = p.Storage.Set(shortenerTable, record)
+	_, err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
@@ -115,7 +139,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 			err,
 		)
 
-		var duplicateError *db.DuplicateError
+		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
 			c.Writer.WriteHeader(http.StatusConflict)
 			c.Header(contentType, "text/plain")
@@ -233,6 +257,11 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 		return
 	}
 
+	if record.DeletedFlag {
+		c.Writer.WriteHeader(http.StatusGone)
+		return
+	}
+
 	if record.OriginalURL == "" {
 		c.Writer.WriteHeader(http.StatusNotFound)
 		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
@@ -251,6 +280,26 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, record.OriginalURL)
 }
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
+	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
+
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+
+			c.JSON(http.StatusUnauthorized, message)
+			return
+		}
+	}
+
 	var body models.ShortenRequestBody
 	bytes, err := c.GetRawData()
 	if err != nil {
@@ -283,11 +332,19 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	record := &models.ShortenRecord{
 		ShortURL:    key,
 		OriginalURL: body.URL,
+		UserID:      userID,
 	}
 
-	err = p.Storage.Set(shortenerTable, record)
+	_, err = p.Storage.Set(shortenerTable, record)
 	if err != nil {
-		var duplicateError *db.DuplicateError
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
+		)
+
+		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
@@ -305,12 +362,6 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 			return
 		}
 
-		p.Sugar.With(
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		).Error(
-			err,
-		)
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
@@ -348,6 +399,26 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
+	var userID int64
+	var err error
+	if *p.Config.DataBase != "" {
+		if userID, err = p.Session.ParseToken(c); err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				err,
+			)
+
+			message := models.Response{
+				Message: http.StatusText(http.StatusUnauthorized),
+			}
+
+			c.JSON(http.StatusUnauthorized, message)
+			return
+		}
+	}
+
 	var body []models.ShortenBatchRequest
 	bytes, err := c.GetRawData()
 	if err != nil {
@@ -366,6 +437,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		values = append(values, &models.ShortenRecord{
 			OriginalURL: value.OriginalURL,
 			ShortURL:    key,
+			UserID:      userID,
 		})
 		result = append(result, models.ShortenBatchResponse{
 			CorrelationID: value.CorrelationID,
@@ -375,24 +447,115 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 
 	err = p.Storage.SetAll(shortenerTable, values)
 	if err != nil {
-		p.Sugar.Error(
-			logKeyError, err.Error(),
-			logKeyURI, c.Request.URL.Path,
-			logKeyIP, c.ClientIP(),
-		)
-
-		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
-		if err != nil {
-			p.Sugar.Error(
-				logKeyError, err.Error(),
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			)
-		}
+		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
 
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, result)
+}
+func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
+	userID, err := p.Session.ParseToken(c)
+	if err != nil {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
+		)
+
+		message := models.Response{
+			Message: http.StatusText(http.StatusUnauthorized),
+		}
+
+		c.JSON(http.StatusUnauthorized, message)
+		return
+	}
+
+	rcs, err := p.Storage.GetAll(shortenerTable, userID)
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	if len(rcs) == 0 {
+		message := models.Response{
+			Message: http.StatusText(http.StatusNoContent),
+		}
+
+		c.JSON(http.StatusNoContent, message)
+		return
+	}
+
+	records := make([]interface{}, 0, len(rcs))
+	for _, rc := range rcs {
+		value, ok := rc.(models.ShortenRecord)
+		if !ok {
+			sendErrorResponse(c, p.Sugar, errors.New("invalid shorten record"))
+			return
+		}
+		records = append(records, map[string]interface{}{
+			"short_url":    *p.Config.BaseURL + "/" + value.ShortURL,
+			"original_url": value.OriginalURL,
+		})
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.JSON(http.StatusOK, records)
+}
+func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
+	userID, err := p.Session.ParseToken(c)
+	if err != nil {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			err,
+		)
+
+		message := models.Response{
+			Message: http.StatusText(http.StatusUnauthorized),
+		}
+
+		c.JSON(http.StatusUnauthorized, message)
+		return
+	}
+
+	var body []string
+	bytes, err := c.GetRawData()
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+	if err := json.Unmarshal(bytes, &body); err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	generate := func(userID int64, key string) chan interface{} {
+		out := make(chan interface{}, 1)
+		go func() {
+			defer close(out)
+			val := &models.ShortenBatchUpdateRequest{
+				ShortURL: key,
+				UserID:   userID,
+			}
+			out <- val
+		}()
+
+		return out
+	}
+
+	values := make([]chan interface{}, 0, len(body))
+	for _, value := range body {
+		values = append(values, generate(userID, value))
+	}
+
+	go func() {
+		done := make(chan struct{})
+		defer close(done)
+		p.Storage.AddToChannel(shortenerTable, done, values...)
+	}()
+
+	c.Status(http.StatusAccepted)
 }

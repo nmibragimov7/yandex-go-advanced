@@ -40,22 +40,26 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, errors.New("failed to find record")
 }
 
-func (s *Storage) Set(record interface{}) error {
+func (s *Storage) GetAll(_ interface{}) ([]interface{}, error) {
+	return nil, nil
+}
+
+func (s *Storage) Set(record interface{}) (interface{}, error) {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
-		return errors.New("failed to parse record interface")
+		return nil, errors.New("failed to parse record interface")
 	}
 
 	data, err := json.Marshal(rec)
 	if err != nil {
-		return fmt.Errorf("failed to marshal record: %w", err)
+		return nil, fmt.Errorf("failed to marshal record: %w", err)
 	}
-	_, err = s.file.Write(append(data, '\n'))
+	n, err := s.file.Write(append(data, '\n'))
 	if err != nil {
-		return fmt.Errorf("failed to write record to file: %w", err)
+		return nil, fmt.Errorf("failed to write record to file: %w", err)
 	}
 
-	return nil
+	return n, nil
 }
 
 func (s *Storage) SetAll(records []interface{}) error {
@@ -91,6 +95,8 @@ func (s *Storage) Close() error {
 }
 
 func (s *Storage) Ping(_ context.Context) error { return nil }
+
+func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
 func Init(path string) (*Storage, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
