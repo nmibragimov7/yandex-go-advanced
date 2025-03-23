@@ -3,23 +3,34 @@ package util
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func GetKey() string {
-	b := make([]byte, 8)
-	if _, err := rand.Read(b); err != nil {
-		panic(err)
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 8
+	var shortID strings.Builder
+
+	shortID.Grow(length)
+
+	randomBytes := make([]byte, length)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		panic("failed to generate random bytes")
 	}
 
-	return base64.URLEncoding.EncodeToString(b)[:8]
+	for _, b := range randomBytes {
+		shortID.WriteByte(charset[b%byte(len(charset))])
+	}
+
+	return shortID.String()
 }
 
 func TestRequest(

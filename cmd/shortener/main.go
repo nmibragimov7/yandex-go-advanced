@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
+
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/logger"
@@ -68,6 +70,7 @@ func run() error {
 		Session: ssp,
 	}
 
+	sgr.Log(1, "server started in: ", *cnf.Server)
 	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))
 
 	return nil

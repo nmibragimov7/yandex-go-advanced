@@ -1,6 +1,7 @@
 package router
 
 import (
+	"net/http"
 	"time"
 	"yandex-go-advanced/internal/common"
 	"yandex-go-advanced/internal/config"
@@ -27,6 +28,7 @@ func (p *RouterProvider) Router() *gin.Engine {
 		"service", "main",
 		"func", "Router",
 	)
+	r.GET("/debug/pprof/*any", gin.WrapH(http.DefaultServeMux))
 
 	middlewares := []gin.HandlerFunc{
 		middleware.GzipMiddleware(sugarWithCtx),
