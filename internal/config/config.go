@@ -28,7 +28,7 @@ func Init() *Config {
 	instance.FilePath = flags.String("f", "./storage.txt", "File path") // ./storage.txt
 	instance.DataBase = flags.String(
 		"d",
-		"host=localhost user=postgres password=admin dbname=postgres sslmode=disable",
+		"",
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
 
