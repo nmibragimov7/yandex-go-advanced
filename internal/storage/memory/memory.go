@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
-	internalModels "yandex-go-advanced/internal/models"
+
+	"yandex-go-advanced/internal/models"
 )
 
 type Storage struct {
@@ -16,9 +17,9 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	var record internalModels.ShortenRecord
+	var record models.ShortenRecord
 	if s.storage[key] != "" {
-		record = internalModels.ShortenRecord{
+		record = models.ShortenRecord{
 			ShortURL:    key,
 			OriginalURL: s.storage[key],
 		}
@@ -37,7 +38,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	rec, ok := record.(*internalModels.ShortenRecord)
+	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
 		return nil, errors.New("failed to parse record interface")
 	}
@@ -51,9 +52,9 @@ func (s *Storage) SetAll(records []interface{}) error {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	rcs := make([]*internalModels.ShortenRecord, 0, len(records))
+	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
-		rec, ok := record.(*internalModels.ShortenRecord)
+		rec, ok := record.(*models.ShortenRecord)
 		if !ok {
 			return errors.New("failed to parse record interface")
 		}
