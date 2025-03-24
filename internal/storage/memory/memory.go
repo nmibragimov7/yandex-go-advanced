@@ -16,9 +16,9 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	var record models.ShortenRecord
+	var record internalModels.ShortenRecord
 	if s.storage[key] != "" {
-		record = models.ShortenRecord{
+		record = internalModels.ShortenRecord{
 			ShortURL:    key,
 			OriginalURL: s.storage[key],
 		}
