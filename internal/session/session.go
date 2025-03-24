@@ -22,6 +22,8 @@ type Claims struct {
 	UserID int64
 }
 
+var hashKey = []byte("my-secret-hash-key")
+
 func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -30,7 +32,7 @@ func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 		UserID: userID,
 	})
 
-	signed, err := token.SignedString([]byte(*p.SecretKey))
+	signed, err := token.SignedString(hashKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
@@ -47,7 +49,7 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(cookie, claims,
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(*p.SecretKey), nil
+			return hashKey, nil
 		},
 	)
 	if err != nil {
@@ -69,7 +71,10 @@ func (p *SessionProvider) CheckCookie(cookie string) error {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(cookie, claims,
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(*p.SecretKey), nil
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return hashKey, nil
 		},
 	)
 	if err != nil {

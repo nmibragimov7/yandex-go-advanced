@@ -26,7 +26,6 @@ func main() {
 
 func run() error {
 	cnf := config.Init()
-	fmt.Println("cnf", *cnf.SecretKey)
 	sgr := logger.Init()
 	defer func() {
 		err := sgr.Sync()

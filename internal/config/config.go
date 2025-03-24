@@ -7,20 +7,18 @@ import (
 )
 
 type Config struct {
-	Server    *string
-	BaseURL   *string
-	FilePath  *string
-	DataBase  *string
-	SecretKey *string
+	Server   *string
+	BaseURL  *string
+	FilePath *string
+	DataBase *string
 }
 
 func Init() *Config {
 	instance := Config{
-		Server:    nil,
-		BaseURL:   nil,
-		FilePath:  nil,
-		DataBase:  nil,
-		SecretKey: nil,
+		Server:   nil,
+		BaseURL:  nil,
+		FilePath: nil,
+		DataBase: nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
@@ -33,7 +31,6 @@ func Init() *Config {
 		"",
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
-	instance.SecretKey = flags.String("s", "secret_key", "Cookie secret key")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -51,9 +48,6 @@ func Init() *Config {
 	}
 	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		instance.DataBase = &envDatabase
-	}
-	if envDatabase, ok := os.LookupEnv("SECRET_KEY"); ok {
-		instance.SecretKey = &envDatabase
 	}
 
 	return &instance
