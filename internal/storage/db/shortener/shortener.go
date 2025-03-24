@@ -9,7 +9,7 @@ import (
 	"time"
 	"yandex-go-advanced/internal/models"
 
-	"github.com/jackc/pgerrcode"
+	pgerrCode "github.com/jackc/pgerrcode"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
@@ -77,7 +77,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	result, err := s.DB.Exec(query, rec.ShortURL, rec.OriginalURL, userID)
 	if err != nil {
 		var pgErr *pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrCode.UniqueViolation {
 			var shortURL string
 			query = "SELECT short_url FROM shortener WHERE original_url = $1"
 			errs := s.DB.QueryRow(query, rec.OriginalURL).Scan(&shortURL)
@@ -87,7 +87,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 
 			return nil, fmt.Errorf("shortener already exists: %w", NewDuplicateError(
 				shortURL,
-				pgerrcode.UniqueViolation,
+				pgerrCode.UniqueViolation,
 				err,
 			))
 		}
