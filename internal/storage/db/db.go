@@ -10,7 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose/v3"
+	gooseV3 "github.com/pressly/goose/v3"
 )
 
 type Repository interface {
@@ -69,7 +69,7 @@ func migrate(db *sqlx.DB) error {
 		return fmt.Errorf("failed to migration direcotry: %w", err)
 	}
 
-	err = goose.Up(db.DB, root+"/migrations")
+	err = gooseV3.Up(db.DB, root+"/migrations")
 	if err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}

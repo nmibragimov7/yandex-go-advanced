@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"yandex-go-advanced/internal/models"
+	models "yandex-go-advanced/internal/models"
 )
 
 type Storage struct {
