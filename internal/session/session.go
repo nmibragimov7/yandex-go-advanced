@@ -6,7 +6,7 @@ import (
 	"yandex-go-advanced/internal/config"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
 type SessionProvider struct {
@@ -18,16 +18,16 @@ const (
 )
 
 type Claims struct {
-	jwt.RegisteredClaims
+	jwtv5.RegisteredClaims
 	UserID int64
 }
 
 var hashKey = []byte("my-secret-hash-key")
 
 func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, Claims{
+		RegisteredClaims: jwtv5.RegisteredClaims{
+			ExpiresAt: jwtv5.NewNumericDate(time.Now().Add(1 * time.Hour)),
 		},
 		UserID: userID,
 	})
@@ -47,8 +47,8 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	}
 
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(cookie, claims,
-		func(t *jwt.Token) (interface{}, error) {
+	token, err := jwtv5.ParseWithClaims(cookie, claims,
+		func(t *jwtv5.Token) (interface{}, error) {
 			return hashKey, nil
 		},
 	)
@@ -57,11 +57,11 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	}
 
 	if !token.Valid {
-		return 0, jwt.ErrTokenNotValidYet
+		return 0, jwtv5.ErrTokenNotValidYet
 	}
 
 	if claims.UserID == 0 {
-		return 0, jwt.ErrInvalidKey
+		return 0, jwtv5.ErrInvalidKey
 	}
 
 	return claims.UserID, nil
@@ -69,9 +69,9 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 
 func (p *SessionProvider) CheckCookie(cookie string) error {
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(cookie, claims,
-		func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+	token, err := jwtv5.ParseWithClaims(cookie, claims,
+		func(t *jwtv5.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwtv5.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
 			return hashKey, nil
@@ -82,11 +82,11 @@ func (p *SessionProvider) CheckCookie(cookie string) error {
 	}
 
 	if !token.Valid {
-		return jwt.ErrTokenNotValidYet
+		return jwtv5.ErrTokenNotValidYet
 	}
 
 	if claims.UserID == 0 {
-		return jwt.ErrInvalidKey
+		return jwtv5.ErrInvalidKey
 	}
 
 	return nil
