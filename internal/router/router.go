@@ -47,7 +47,7 @@ func (p *RouterProvider) Router() *gin.Engine {
 	r.POST("/", middleware.AuthMiddleware(atp), p.Handler.MainPage)
 	r.POST("/api/shorten", middleware.AuthMiddleware(atp), p.Handler.ShortenHandler)
 	r.POST("/api/shorten/batch", middleware.AuthMiddleware(atp), p.Handler.ShortenBatchHandler)
-	r.GET("/api/user/urls", p.Handler.UserUrlsHandler)
+	r.GET("/api/user/urls", middleware.AuthMiddleware(atp), p.Handler.UserUrlsHandler)
 	r.DELETE("/api/user/urls", p.Handler.UserUrlsDeleteHandler)
 	r.GET("/ping", p.Handler.PingHandler)
 	r.GET("/:id", p.Handler.IDPage)

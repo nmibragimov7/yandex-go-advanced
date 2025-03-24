@@ -42,6 +42,8 @@ func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 
 func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	cookie, err := c.Cookie(cookieName)
+	fmt.Println("cookie", cookie)
+	fmt.Println("err", err)
 	if err != nil || cookie == "" {
 		return 0, fmt.Errorf("failed to parse cookie: %w", err)
 	}

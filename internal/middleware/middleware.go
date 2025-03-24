@@ -39,6 +39,7 @@ func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 		}
 
 		cookie, err := c.Cookie(cookieName)
+		fmt.Println("cookie", cookie)
 		if err != nil || cookie == "" {
 			record := &models.UserRecord{}
 
