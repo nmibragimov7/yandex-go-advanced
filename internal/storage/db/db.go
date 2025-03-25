@@ -13,6 +13,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+// Repository - interface for database instance
 type Repository interface {
 	Get(key string) (interface{}, error)
 	GetAll(key interface{}) ([]interface{}, error)

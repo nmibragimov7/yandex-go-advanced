@@ -12,6 +12,7 @@ import (
 	"yandex-go-advanced/internal/storage/memory"
 )
 
+// Storage - interface for storage instance
 type Storage interface {
 	Get(entity string, key string) (interface{}, error)
 	GetAll(entity string, key interface{}) ([]interface{}, error)
