@@ -10,6 +10,7 @@ import (
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
+// SessionProvider - struct that contains the necessary session settings
 type SessionProvider struct {
 	*config.Config
 }
@@ -18,6 +19,7 @@ const (
 	cookieName = "user_token"
 )
 
+// Claims - struct that contains jwt settings
 type Claims struct {
 	jwtv5.RegisteredClaims
 	UserID int64
@@ -25,6 +27,7 @@ type Claims struct {
 
 var hashKey = []byte("my-secret-hash-key")
 
+// GenerateToken - func for generate token
 func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, Claims{
 		RegisteredClaims: jwtv5.RegisteredClaims{
@@ -41,10 +44,9 @@ func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 	return signed, nil
 }
 
-func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
+// ParseCookie - func for parse cookie
+func (p *SessionProvider) ParseCookie(c *gin.Context) (int64, error) {
 	cookie, err := c.Cookie(cookieName)
-	fmt.Println("cookie", cookie)
-	fmt.Println("err", err)
 	if err != nil || cookie == "" {
 		return 0, fmt.Errorf("failed to parse cookie: %w", err)
 	}
@@ -70,6 +72,7 @@ func (p *SessionProvider) ParseToken(c *gin.Context) (int64, error) {
 	return claims.UserID, nil
 }
 
+// CheckCookie - func for check cookie
 func (p *SessionProvider) CheckCookie(cookie string) error {
 	claims := &Claims{}
 	token, err := jwtv5.ParseWithClaims(cookie, claims,

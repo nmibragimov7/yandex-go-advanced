@@ -15,11 +15,13 @@ import (
 	"github.com/lib/pq"
 )
 
+// Storage - struct that contains the necessary settings
 type Storage struct {
 	DB      *sqlx.DB
 	Channel chan interface{}
 }
 
+// Get - func for return record
 func (s *Storage) Get(key string) (interface{}, error) {
 	var record models.ShortenRecord
 	query := "SELECT short_url, original_url, is_deleted FROM shortener WHERE short_url = $1"
@@ -31,6 +33,7 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return &record, nil
 }
 
+// GetAll - func for return records
 func (s *Storage) GetAll(key interface{}) ([]interface{}, error) {
 	var records []interface{}
 
@@ -63,6 +66,7 @@ func (s *Storage) GetAll(key interface{}) ([]interface{}, error) {
 	return records, nil
 }
 
+// Set - func for saving record in database
 func (s *Storage) Set(record interface{}) (interface{}, error) {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
@@ -98,6 +102,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	return result, nil
 }
 
+// RetryUpdateAll - func for retry update records
 func (s *Storage) RetryUpdateAll(records []interface{}) error {
 	maxRetries := 5
 
@@ -117,6 +122,7 @@ func (s *Storage) RetryUpdateAll(records []interface{}) error {
 	return errors.New("failed to attempt retries")
 }
 
+// UpdateBatches - func for update batches
 func (s *Storage) UpdateBatches(records []interface{}) error {
 	rcs := make([]*models.ShortenBatchUpdateRequest, 0, len(records))
 	for _, record := range records {
@@ -162,6 +168,7 @@ func (s *Storage) UpdateBatches(records []interface{}) error {
 	return nil
 }
 
+// SetAll - func for saving records in database
 func (s *Storage) SetAll(records []interface{}) error {
 	maxRetries := 5
 
@@ -181,6 +188,7 @@ func (s *Storage) SetAll(records []interface{}) error {
 	return errors.New("failed to attempt retries")
 }
 
+// SetAll - func for saving batches in database
 func (s *Storage) SaveBatches(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
@@ -231,6 +239,7 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 	return nil
 }
 
+// Ping - func for ping database
 func (s *Storage) Ping(ctx context.Context) error {
 	if err := s.DB.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to ping database: %w", err)
@@ -239,6 +248,7 @@ func (s *Storage) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Close - func for close database
 func (s *Storage) Close() error {
 	if err := s.DB.Close(); err != nil {
 		return fmt.Errorf("failed to close db storage: %w", err)
@@ -247,6 +257,7 @@ func (s *Storage) Close() error {
 	return nil
 }
 
+// AddToChannel - func for add value in channel
 func (s *Storage) AddToChannel(done chan struct{}, channels ...chan interface{}) {
 	for _, channel := range channels {
 		select {
@@ -258,6 +269,7 @@ func (s *Storage) AddToChannel(done chan struct{}, channels ...chan interface{})
 	}
 }
 
+// Flush - func for subscribe channels
 func Flush(s *Storage) {
 	ticker := time.NewTicker(10 * time.Second)
 

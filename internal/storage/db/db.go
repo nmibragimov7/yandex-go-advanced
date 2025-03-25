@@ -23,6 +23,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 }
 
+// Init - initialize database instance
 func Init(path string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", path)
 	if err != nil {

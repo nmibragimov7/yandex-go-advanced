@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Init - initialize logger instance
 func Init() *zap.SugaredLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {

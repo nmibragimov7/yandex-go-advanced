@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// Config - config struct
 type Config struct {
 	Server   *string
 	BaseURL  *string
@@ -13,6 +14,7 @@ type Config struct {
 	DataBase *string
 }
 
+// Init - initialize config instance
 func Init() *Config {
 	instance := Config{
 		Server:   nil,

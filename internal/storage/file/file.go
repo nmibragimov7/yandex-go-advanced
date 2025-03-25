@@ -11,11 +11,13 @@ import (
 	"yandex-go-advanced/internal/models"
 )
 
+// Storage - struct that contains the necessary settings
 type Storage struct {
 	file   *os.File
 	writer *bufio.Writer
 }
 
+// Get - func for return record
 func (s *Storage) Get(key string) (interface{}, error) {
 	if _, err := s.file.Seek(0, 0); err != nil {
 		return nil, fmt.Errorf("failed to seek file: %w", err)
@@ -41,10 +43,12 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, errors.New("failed to find record")
 }
 
+// GetAll - func for return records
 func (s *Storage) GetAll(_ interface{}) ([]interface{}, error) {
 	return nil, nil
 }
 
+// Set - func for saving record in file
 func (s *Storage) Set(record interface{}) (interface{}, error) {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
@@ -63,6 +67,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	return n, nil
 }
 
+// SetAll - func for saving records in file
 func (s *Storage) SetAll(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
@@ -88,6 +93,7 @@ func (s *Storage) SetAll(records []interface{}) error {
 	return nil
 }
 
+// Close - func for close file
 func (s *Storage) Close() error {
 	if err := s.file.Close(); err != nil {
 		return fmt.Errorf("failed to close file: %w", err)
@@ -95,10 +101,13 @@ func (s *Storage) Close() error {
 	return nil
 }
 
+// Ping - func for ping file
 func (s *Storage) Ping(_ context.Context) error { return nil }
 
+// AddToChannel - func for add value in channel
 func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
+// Init - initialize file instance
 func Init(path string) (*Storage, error) {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {

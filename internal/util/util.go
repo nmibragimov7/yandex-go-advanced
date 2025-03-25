@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// GetKey - func for get random hash
 func GetKey() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const length = 8
@@ -33,6 +34,7 @@ func GetKey() string {
 	return shortID.String()
 }
 
+// TestRequest - func for testing
 func TestRequest(
 	t *testing.T,
 	ts *httptest.Server,

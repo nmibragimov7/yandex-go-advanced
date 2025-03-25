@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// RouterProvider - struct that contains the necessary router settings
 type RouterProvider struct {
 	Storage storage.Storage
 	Config  *config.Config
@@ -22,6 +23,7 @@ type RouterProvider struct {
 	Session *session.SessionProvider
 }
 
+// Router - func for init router
 func (p *RouterProvider) Router() *gin.Engine {
 	r := gin.Default()
 	sugarWithCtx := p.Sugar.With(

@@ -25,6 +25,7 @@ const (
 	cookieName  = "user_token"
 )
 
+// AuthProvider - struct that contains the necessary auth settings
 type AuthProvider struct {
 	Sugar   *zap.SugaredLogger
 	Storage storage.Storage
@@ -32,6 +33,7 @@ type AuthProvider struct {
 	Config  *config.Config
 }
 
+// AuthMiddleware - middleware for check session
 func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if *p.Config.DataBase == "" {
@@ -112,6 +114,7 @@ type gzipWriter struct {
 	zw *gzip.Writer
 }
 
+// Write - func for gzip writer
 func (w *gzipWriter) Write(b []byte) (int, error) {
 	n, err := w.zw.Write(b)
 	if err != nil {
@@ -119,6 +122,8 @@ func (w *gzipWriter) Write(b []byte) (int, error) {
 	}
 	return n, nil
 }
+
+// Write - func for gzip closer
 func (w *gzipWriter) Close() error {
 	err := w.zw.Close()
 	if err != nil {
@@ -143,6 +148,8 @@ func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, erro
 
 	return zr, nil
 }
+
+// GzipMiddleware - middleware for gzip response or unzip body
 func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		contentType := c.Request.Header.Get("Content-Type")
@@ -220,6 +227,7 @@ type loggerWriter struct {
 	body *bytes.Buffer
 }
 
+// Write - func for body writer
 func (w *loggerWriter) Write(data []byte) (int, error) {
 	w.body.Write(data)
 
@@ -229,6 +237,8 @@ func (w *loggerWriter) Write(data []byte) (int, error) {
 	}
 	return n, nil
 }
+
+// LoggerMiddleware - middleware for logger
 func LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -258,6 +268,7 @@ func LoggerMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 	}
 }
 
+// TimeoutMiddleware - middleware for timeout
 func TimeoutMiddleware(sgr *zap.SugaredLogger, timeout time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
