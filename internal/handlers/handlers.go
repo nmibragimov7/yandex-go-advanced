@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// HandlerProvider - struct that contains the necessary handler settings
 type HandlerProvider struct {
 	Config  *config.Config
 	Storage storage.Storage
@@ -65,11 +66,12 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 	c.JSON(http.StatusInternalServerError, message)
 }
 
+// MainPage - base handler for short url
 func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		if userID, err = p.Session.ParseCookie(c); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -184,6 +186,8 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		return
 	}
 }
+
+// IDPage - handler for get url by id
 func (p *HandlerProvider) IDPage(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -280,11 +284,13 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 
 	c.Redirect(http.StatusTemporaryRedirect, record.OriginalURL)
 }
+
+// ShortenHandler - handler for short url by json
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		if userID, err = p.Session.ParseCookie(c); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -383,6 +389,8 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, response)
 }
+
+// PingHandler - handler for ping storage
 func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -399,11 +407,13 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }
+
+// ShortenBatchHandler - handler for short url batches
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		if userID, err = p.Session.ParseCookie(c); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -455,8 +465,10 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, result)
 }
+
+// UserUrlsHandler - handler for get user short urls
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	userID, err := p.Session.ParseToken(c)
+	userID, err := p.Session.ParseCookie(c)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
@@ -504,8 +516,10 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, records)
 }
+
+// UserUrlsDeleteHandler - handler for remove user short urls
 func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
-	userID, err := p.Session.ParseToken(c)
+	userID, err := p.Session.ParseCookie(c)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
