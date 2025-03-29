@@ -536,20 +536,6 @@ func TestShortenBatchHandler(t *testing.T) {
 	ctrl, engine, mockStorage := getMockInitial(t)
 	defer ctrl.Finish()
 
-	generate := func(userID int64, key string) chan interface{} {
-		out := make(chan interface{}, 1)
-		go func() {
-			defer close(out)
-			val := &models.ShortenBatchUpdateRequest{
-				ShortURL: key,
-				UserID:   userID,
-			}
-			out <- val
-		}()
-
-		return out
-	}
-
 	t.Run("Save shortener batch", func(t *testing.T) {
 		body := `[{"correlation_id":"123","original_url":"http://practicum.yandex.ru"}]`
 
@@ -587,13 +573,6 @@ func TestShortenBatchHandler(t *testing.T) {
 	})
 
 	t.Run("Save shortener batch with status internal server error", func(t *testing.T) {
-		body := []string{"123456", "234567", "345678"}
-
-		values := make([]chan interface{}, 0, len(body))
-		for _, value := range body {
-			values = append(values, generate(int64(1), value))
-		}
-
 		mockStorage.EXPECT().AddToChannel("shortener", gomock.Any(), gomock.Any()).AnyTimes()
 
 		ssp := session.SessionProvider{
@@ -710,28 +689,7 @@ func TestUserUrlsDeleteHandler(t *testing.T) {
 	ctrl, engine, mockStorage := getMockInitial(t)
 	defer ctrl.Finish()
 
-	generate := func(userID int64, key string) chan interface{} {
-		out := make(chan interface{}, 1)
-		go func() {
-			defer close(out)
-			val := &models.ShortenBatchUpdateRequest{
-				ShortURL: key,
-				UserID:   userID,
-			}
-			out <- val
-		}()
-
-		return out
-	}
-
 	t.Run("Delete my urls", func(t *testing.T) {
-		body := []string{"123456", "234567", "345678"}
-
-		values := make([]chan interface{}, 0, len(body))
-		for _, value := range body {
-			values = append(values, generate(int64(1), value))
-		}
-
 		mockStorage.EXPECT().AddToChannel("shortener", gomock.Any(), gomock.Any()).AnyTimes()
 
 		ssp := session.SessionProvider{
@@ -766,13 +724,6 @@ func TestUserUrlsDeleteHandler(t *testing.T) {
 	})
 
 	t.Run("Delete my urls with status unauthorized", func(t *testing.T) {
-		body := []string{"123456", "234567", "345678"}
-
-		values := make([]chan interface{}, 0, len(body))
-		for _, value := range body {
-			values = append(values, generate(int64(1), value))
-		}
-
 		mockStorage.EXPECT().AddToChannel("shortener", gomock.Any(), gomock.Any()).AnyTimes()
 
 		ts := httptest.NewServer(engine)
@@ -793,13 +744,6 @@ func TestUserUrlsDeleteHandler(t *testing.T) {
 	})
 
 	t.Run("Delete my urls with status internal server error", func(t *testing.T) {
-		body := []string{"123456", "234567", "345678"}
-
-		values := make([]chan interface{}, 0, len(body))
-		for _, value := range body {
-			values = append(values, generate(int64(1), value))
-		}
-
 		mockStorage.EXPECT().AddToChannel("shortener", gomock.Any(), gomock.Any()).AnyTimes()
 
 		ssp := session.SessionProvider{
