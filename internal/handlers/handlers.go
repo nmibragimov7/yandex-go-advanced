@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
@@ -28,6 +29,7 @@ type HandlerProvider struct {
 }
 
 const (
+	cookieName      = "user_token"
 	logKeyError     = "error"
 	logKeyURI       = "uri"
 	logKeyIP        = "ip"
@@ -71,7 +73,8 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseCookie(c); err != nil {
+		cookie, err := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -86,6 +89,27 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, message)
 			return
 		}
+	}
+
+	if strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			errors.New("no content type"),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
+		if err != nil {
+			p.Sugar.With(
+				logKeyURI, c.Request.URL.Path,
+				logKeyIP, c.ClientIP(),
+			).Error(
+				errors.New("no content type"),
+			)
+		}
+		return
 	}
 
 	body, err := io.ReadAll(c.Request.Body)
@@ -249,7 +273,8 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseCookie(c); err != nil {
+		cookie, err := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -373,7 +398,8 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseCookie(c); err != nil {
+		cookie, err := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -428,7 +454,8 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 
 // UserUrlsHandler - handler for get user short urls
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	userID, err := p.Session.ParseCookie(c)
+	cookie, err := c.Cookie(cookieName)
+	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
@@ -479,7 +506,8 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 
 // UserUrlsDeleteHandler - handler for remove user short urls
 func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
-	userID, err := p.Session.ParseCookie(c)
+	cookie, err := c.Cookie(cookieName)
+	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,

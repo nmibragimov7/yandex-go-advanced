@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"yandex-go-advanced/internal/storage/db/shortener"
 
 	"yandex-go-advanced/internal/models"
 )
@@ -53,6 +54,27 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
 		return nil, errors.New("failed to parse record interface")
+	}
+
+	if _, err := s.file.Seek(0, 0); err != nil {
+		return nil, fmt.Errorf("failed to seek file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(s.file)
+
+	for scanner.Scan() {
+		var item models.ShortenRecord
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
+		}
+
+		if item.OriginalURL == rec.OriginalURL {
+			return nil, fmt.Errorf("shortener already exists: %w", shortener.NewDuplicateError(
+				rec.ShortURL,
+				"23505",
+				errors.New("shortener already exists"),
+			))
+		}
 	}
 
 	data, err := json.Marshal(rec)

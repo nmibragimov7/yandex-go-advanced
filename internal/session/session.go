@@ -1,12 +1,12 @@
 package session
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"yandex-go-advanced/internal/config"
 
-	"github.com/gin-gonic/gin"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
@@ -45,10 +45,9 @@ func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
 }
 
 // ParseCookie - func for parse cookie
-func (p *SessionProvider) ParseCookie(c *gin.Context) (int64, error) {
-	cookie, err := c.Cookie(cookieName)
-	if err != nil || cookie == "" {
-		return 0, fmt.Errorf("failed to parse cookie: %w", err)
+func (p *SessionProvider) ParseCookie(cookie string) (int64, error) {
+	if cookie == "" {
+		return 0, errors.New("cookie is empty")
 	}
 
 	claims := &Claims{}
