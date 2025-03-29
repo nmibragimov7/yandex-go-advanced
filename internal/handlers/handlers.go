@@ -88,20 +88,6 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		}
 	}
 
-	if c.Request.Method != http.MethodPost {
-		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
-		if err != nil {
-			p.Sugar.With(
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			).Error(
-				err,
-			)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		p.Sugar.With(
@@ -189,34 +175,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 
 // IDPage - handler for get url by id
 func (p *HandlerProvider) IDPage(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
-		if err != nil {
-			p.Sugar.With(
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			).Error(
-				err,
-			)
-		}
-		return
-	}
-
 	path := c.Param("id")
-	if path == "" {
-		c.Writer.WriteHeader(http.StatusNotFound)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
-		if err != nil {
-			p.Sugar.With(
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			).Error(
-				err,
-			)
-		}
-		return
-	}
 
 	rec, err := p.Storage.Get(shortenerTable, path)
 	if err != nil {
@@ -405,6 +364,7 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 		return
 	}
 
+	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }
 

@@ -62,7 +62,7 @@ func run() error {
 		Sugar:   sgr,
 		Session: ssp,
 	}
-	rtr := router.RouterProvider{
+	rtp := router.RouterProvider{
 		Storage: str,
 		Config:  cnf,
 		Sugar:   sgr,
@@ -71,7 +71,7 @@ func run() error {
 	}
 
 	sgr.Log(1, "server started in: ", *cnf.Server)
-	sgr.Error(http.ListenAndServe(*cnf.Server, rtr.Router()))
+	sgr.Error(http.ListenAndServe(*cnf.Server, rtp.Router()))
 
 	return nil
 }
