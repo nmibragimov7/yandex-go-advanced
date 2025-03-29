@@ -1,0 +1,28 @@
+name: Coverate Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  golangci:
+    name: testcoverage
+    runs-on: ubuntu-latest
+    container: golang:1.24
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -coverprofile=coverage.out ./...
+
+      - name: Filter mocks
+        run: grep -v "handlersmocks/" coverage.out > coverage_filtered.out
+
+      - name: Show coverage
+        run: go tool cover -func=coverage_filtered.out
