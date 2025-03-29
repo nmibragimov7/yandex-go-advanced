@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"yandex-go-advanced/internal/models"
@@ -162,7 +163,8 @@ func TestPing(t *testing.T) {
 			mtx:     &sync.Mutex{},
 		}
 
-		err := stp.Ping(nil)
+		ctx := context.Background()
+		err := stp.Ping(ctx)
 		assert.Empty(t, err)
 	})
 }

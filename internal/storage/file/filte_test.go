@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"os"
 	"testing"
 	"yandex-go-advanced/internal/models"
@@ -170,7 +171,8 @@ func TestPing(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, str)
 
-		err = str.Ping(nil)
+		ctx := context.Background()
+		err = str.Ping(ctx)
 		assert.Empty(t, err)
 	})
 }
