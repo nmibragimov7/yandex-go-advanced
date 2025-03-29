@@ -73,7 +73,7 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		cookie, err := c.Cookie(cookieName)
+		cookie, _ := c.Cookie(cookieName)
 		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
@@ -273,7 +273,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		cookie, err := c.Cookie(cookieName)
+		cookie, _ := c.Cookie(cookieName)
 		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
@@ -398,7 +398,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		cookie, err := c.Cookie(cookieName)
+		cookie, _ := c.Cookie(cookieName)
 		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
@@ -454,7 +454,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 
 // UserUrlsHandler - handler for get user short urls
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	cookie, err := c.Cookie(cookieName)
+	cookie, _ := c.Cookie(cookieName)
 	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
@@ -506,7 +506,7 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 
 // UserUrlsDeleteHandler - handler for remove user short urls
 func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
-	cookie, err := c.Cookie(cookieName)
+	cookie, _ := c.Cookie(cookieName)
 	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
