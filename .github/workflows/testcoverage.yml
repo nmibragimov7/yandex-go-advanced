@@ -22,7 +22,7 @@ jobs:
         run: go test -v -coverprofile=coverage.out ./...
 
       - name: Filter mocks
-        run: grep -v "handlersmocks/" coverage.out > coverage_filtered.out
+        run: grep -Ev "handlersmocks/|/cmd/" coverage.out > coverage_filtered.out
 
       - name: Show coverage
         run: go tool cover -func=coverage_filtered.out
