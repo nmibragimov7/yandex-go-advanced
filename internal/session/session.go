@@ -15,10 +15,6 @@ type SessionProvider struct {
 	*config.Config
 }
 
-const (
-	cookieName = "user_token"
-)
-
 // Claims - struct that contains jwt settings
 type Claims struct {
 	jwtv5.RegisteredClaims

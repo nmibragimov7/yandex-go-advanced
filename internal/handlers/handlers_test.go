@@ -133,7 +133,7 @@ func TestMainPage(t *testing.T) {
 		)
 	}
 	defer func() {
-		err := str.Close()
+		err = str.Close()
 		if err != nil {
 			sgr.Errorw(
 				"failed to close storage connection",
@@ -166,7 +166,7 @@ func TestMainPage(t *testing.T) {
 			headers := map[string]string{}
 			res, resBody := util.TestRequest(t, ts, test.method, test.path, bytes.NewBufferString(test.body), headers)
 			defer func() {
-				if err := res.Body.Close(); err != nil {
+				if resErr := res.Body.Close(); resErr != nil {
 					log.Printf("failed to close body: %s", err.Error())
 				}
 			}()
@@ -557,7 +557,7 @@ func TestUserUrlsHandler(t *testing.T) {
 		res, err := ts.Client().Do(req)
 		require.NoError(t, err)
 		defer func() {
-			if err := res.Body.Close(); err != nil {
+			if err = res.Body.Close(); err != nil {
 				log.Printf("failed to close body: %s", err.Error())
 			}
 		}()

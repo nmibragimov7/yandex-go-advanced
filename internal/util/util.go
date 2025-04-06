@@ -58,7 +58,7 @@ func TestRequest(
 	res, err := ts.Client().Do(req)
 	require.NoError(t, err)
 	defer func() {
-		if err := res.Body.Close(); err != nil {
+		if err = res.Body.Close(); err != nil {
 			log.Printf("failed to close body: %s", err.Error())
 		}
 	}()

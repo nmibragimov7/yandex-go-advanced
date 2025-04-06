@@ -26,7 +26,7 @@ func Example() {
 		)
 	}
 	defer func() {
-		err := str.Close()
+		err = str.Close()
 		if err != nil {
 			sgr.Errorw(
 				"failed to close storage connection",

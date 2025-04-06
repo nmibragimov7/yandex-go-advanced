@@ -297,7 +297,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
-	if err := json.Unmarshal(bytes, &body); err != nil {
+	if err = json.Unmarshal(bytes, &body); err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
@@ -422,7 +422,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
-	if err := json.Unmarshal(bytes, &body); err != nil {
+	if err = json.Unmarshal(bytes, &body); err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}

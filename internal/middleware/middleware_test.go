@@ -51,7 +51,7 @@ func TestGzipHandler(t *testing.T) {
 		zr, err := gzip.NewReader(bytes.NewReader(result))
 		assert.NoError(t, err)
 		defer func() {
-			err := zr.Close()
+			err = zr.Close()
 			assert.NoError(t, err)
 			if err != nil {
 				sgr.Errorw(
@@ -105,7 +105,7 @@ func TestUnGzipHandler(t *testing.T) {
 		zr, err := uzp.unGzipHandler(sgr)
 		assert.NoError(t, err)
 		defer func() {
-			err := zr.Close()
+			err = zr.Close()
 			assert.NoError(t, err)
 			if err != nil {
 				sgr.Errorw(
@@ -163,7 +163,7 @@ func TestGzipMiddleware(t *testing.T) {
 		zr, err := gzip.NewReader(recorder.Body)
 		assert.NoError(t, err)
 		defer func() {
-			err := zr.Close()
+			err = zr.Close()
 			assert.NoError(t, err)
 			if err != nil {
 				sgr.Errorw(

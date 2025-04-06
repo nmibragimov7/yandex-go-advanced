@@ -42,7 +42,7 @@ func (s *Storage) GetAll(key interface{}) ([]interface{}, error) {
 		return nil, fmt.Errorf("failed to query records: %w", err)
 	}
 	defer func() {
-		err := rows.Close()
+		err = rows.Close()
 		if err != nil {
 			log.Printf("failed to close rows: %s", err.Error())
 		}
@@ -51,7 +51,7 @@ func (s *Storage) GetAll(key interface{}) ([]interface{}, error) {
 	for rows.Next() {
 		var record models.ShortenRecord
 
-		err := rows.Scan(&record.ShortURL, &record.OriginalURL)
+		err = rows.Scan(&record.ShortURL, &record.OriginalURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan record: %w", err)
 		}
@@ -140,7 +140,7 @@ func (s *Storage) UpdateBatches(records []interface{}) error {
 	}
 
 	defer func() {
-		err := tx.Rollback()
+		err = tx.Rollback()
 		if err != nil {
 			log.Printf("failed to rollback transaction: %s", err.Error())
 		}
@@ -206,7 +206,7 @@ func (s *Storage) SaveBatches(records []interface{}) error {
 	}
 
 	defer func() {
-		err := tx.Rollback()
+		err = tx.Rollback()
 		if err != nil {
 			log.Printf("failed to rollback transaction: %s", err.Error())
 		}

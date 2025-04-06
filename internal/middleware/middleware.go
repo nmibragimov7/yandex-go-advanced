@@ -45,8 +45,8 @@ func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 		if err != nil || cookie == "" {
 			record := &models.UserRecord{}
 
-			id, err := p.Storage.Set("users", record)
-			if err != nil {
+			id, strErr := p.Storage.Set("users", record)
+			if strErr != nil {
 				p.Sugar.Errorw(
 					"failed to save user record",
 					logKeyError, err.Error(),
@@ -61,8 +61,8 @@ func AuthMiddleware(p *AuthProvider) gin.HandlerFunc {
 				return
 			}
 
-			token, err := p.Session.GenerateToken(id.(int64))
-			if err != nil {
+			token, ssnErr := p.Session.GenerateToken(id.(int64))
+			if ssnErr != nil {
 				p.Sugar.Errorw(
 					"failed to generate token",
 					logKeyError, err.Error(),
@@ -188,7 +188,7 @@ func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 			}
 			zr, err := p.unGzipHandler(sgr)
 			defer func() {
-				err := zr.Close()
+				err = zr.Close()
 				if err != nil {
 					sgr.Errorw(
 						"gzip middleware reader close failed",
