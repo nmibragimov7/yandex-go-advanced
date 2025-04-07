@@ -14,6 +14,10 @@ import (
 	"yandex-go-advanced/internal/storage"
 )
 
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
+
 const (
 	logKeyError = "error"
 )
@@ -71,6 +75,10 @@ func run() error {
 	}
 
 	sgr.Log(1, "server started in: ", *cnf.Server)
+	sgr.Log(1, "Build version: ", buildVersion)
+	sgr.Log(1, "Build date: ", buildDate)
+	sgr.Log(1, "Build commit: ", buildCommit)
+
 	sgr.Error(http.ListenAndServe(*cnf.Server, rtp.Router()))
 
 	return nil
