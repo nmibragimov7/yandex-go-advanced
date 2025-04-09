@@ -34,7 +34,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			ast.Inspect(fun.Body, func(stmt ast.Node) bool {
 				if callExpr, ok := stmt.(*ast.CallExpr); ok && isOsExit(callExpr, pass) {
 					pass.Reportf(callExpr.Pos(), "os.Exit called in main package")
-					return false // Прерываем обход
+					return true // Прерываем обход
 				}
 				if deferStmt, ok := stmt.(*ast.DeferStmt); ok {
 					if deferStmt.Call == nil {
@@ -42,7 +42,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					}
 					if call, ok := deferStmt.Call.Fun.(*ast.CallExpr); ok && isOsExit(call, pass) {
 						pass.Reportf(deferStmt.Pos(), "os.Exit called in main package")
-						return false
+						//return false
 					}
 				}
 				return true
