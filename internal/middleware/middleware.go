@@ -29,7 +29,7 @@ const (
 type AuthProvider struct {
 	Sugar   *zap.SugaredLogger
 	Storage storage.Storage
-	Session *session.SessionProvider
+	Session session.Session
 	Config  *config.Config
 }
 
@@ -134,8 +134,11 @@ func (p *gzipProvider) gzipHandler() *gzip.Writer {
 	zw := gzip.NewWriter(p.writer)
 	return zw
 }
+
+var gzipNewReader = gzip.NewReader
+
 func (p *gzipProvider) unGzipHandler(sgr *zap.SugaredLogger) (*gzip.Reader, error) {
-	zr, err := gzip.NewReader(p.reader)
+	zr, err := gzipNewReader(p.reader)
 	if err != nil {
 		sgr.Errorw(
 			"gzip middleware reader failed",
@@ -188,12 +191,14 @@ func GzipMiddleware(sgr *zap.SugaredLogger) gin.HandlerFunc {
 			}
 			zr, err := p.unGzipHandler(sgr)
 			defer func() {
-				err = zr.Close()
-				if err != nil {
-					sgr.Errorw(
-						"gzip middleware reader close failed",
-						logKeyError, err.Error(),
-					)
+				if zr != nil {
+					err = zr.Close()
+					if err != nil {
+						sgr.Errorw(
+							"gzip middleware reader close failed",
+							logKeyError, err.Error(),
+						)
+					}
 				}
 			}()
 

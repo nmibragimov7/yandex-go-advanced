@@ -15,6 +15,13 @@ type SessionProvider struct {
 	*config.Config
 }
 
+// Session - interface for session instance
+type Session interface {
+	GenerateToken(userID int64) (string, error)
+	ParseCookie(cookie string) (int64, error)
+	CheckCookie(cookie string) error
+}
+
 // Claims - struct that contains jwt settings
 type Claims struct {
 	jwtv5.RegisteredClaims
@@ -22,10 +29,11 @@ type Claims struct {
 }
 
 var hashKey = []byte("my-secret-hash-key")
+var newWithClaims = jwtv5.NewWithClaims
 
 // GenerateToken - func for generate token
 func (p *SessionProvider) GenerateToken(userID int64) (string, error) {
-	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, Claims{
+	token := newWithClaims(jwtv5.SigningMethodHS256, Claims{
 		RegisteredClaims: jwtv5.RegisteredClaims{
 			ExpiresAt: jwtv5.NewNumericDate(time.Now().Add(1 * time.Hour)),
 		},
