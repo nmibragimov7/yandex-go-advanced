@@ -452,7 +452,7 @@ func TestGzipMiddleware(t *testing.T) {
 
 		router.ServeHTTP(recorder, req)
 
-		assert.Contains(t, string(recorder.Body.Bytes()), "Bad Request")
+		assert.Contains(t, recorder.Body.String(), "Bad Request")
 		gzipNewReader = gzip.NewReader
 	})
 }
@@ -553,7 +553,7 @@ func TestWrite(t *testing.T) {
 			t.Errorf("expected %d bytes written, got %d", len(expectedData), n)
 		}
 
-		if string(lgr.body.Bytes()) != string(expectedData) {
+		if lgr.body.String() != string(expectedData) {
 			t.Errorf("expected body to contain %s, got %s", expectedData, lgr.body.Bytes())
 		}
 
