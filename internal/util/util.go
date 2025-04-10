@@ -24,7 +24,8 @@ func GetKey() string {
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		panic("failed to generate random bytes")
+		return ""
+		//panic("failed to generate random bytes")
 	}
 
 	for _, b := range randomBytes {
