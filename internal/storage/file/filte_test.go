@@ -39,6 +39,10 @@ func (b *brokenWriteFile) Write(_ []byte) (n int, err error) {
 	return 0, errors.New("failed to write record to file")
 }
 
+func (b *brokenWriteFile) Close() error {
+	return b.File.Close()
+}
+
 func TestSet(t *testing.T) {
 	t.Run("File set", func(t *testing.T) {
 		_ = os.Remove("./storage.txt")
@@ -158,6 +162,10 @@ type brokenSeekFile struct {
 
 func (b *brokenSeekFile) Seek(_ int64, _ int) (int64, error) {
 	return 0, errors.New("seek error")
+}
+
+func (b *brokenSeekFile) Close() error {
+	return b.File.Close()
 }
 
 func TestGet(t *testing.T) {
@@ -316,6 +324,10 @@ func TestSetAll(t *testing.T) {
 
 type brokenCloseFile struct {
 	*os.File
+}
+
+func (b *brokenCloseFile) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
 }
 
 func (b *brokenCloseFile) Close() error {
