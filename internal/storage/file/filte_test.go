@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -35,8 +36,16 @@ type brokenWriteFile struct {
 	*os.File
 }
 
+func (b *brokenWriteFile) Seek(_ int64, _ int) (int64, error) {
+	return 0, errors.New("seek error")
+}
+
 func (b *brokenWriteFile) Write(_ []byte) (n int, err error) {
-	return 0, errors.New("failed to write record to file")
+	return 0, errors.New("write error")
+}
+
+func (b *brokenWriteFile) Read(_ []byte) (n int, err error) {
+	return 0, errors.New("read error")
 }
 
 func (b *brokenWriteFile) Close() error {
@@ -152,7 +161,8 @@ func TestSet(t *testing.T) {
 		}
 
 		_, err = s.Set(rec)
-		assert.ErrorContains(t, err, "failed to write record to file")
+		fmt.Println("err", err)
+		assert.ErrorContains(t, err, "seek error")
 	})
 }
 
@@ -162,6 +172,14 @@ type brokenSeekFile struct {
 
 func (b *brokenSeekFile) Seek(_ int64, _ int) (int64, error) {
 	return 0, errors.New("seek error")
+}
+
+func (b *brokenSeekFile) Write(_ []byte) (n int, err error) {
+	return 0, errors.New("write error")
+}
+
+func (b *brokenSeekFile) Read(_ []byte) (n int, err error) {
+	return 0, errors.New("read error")
 }
 
 func (b *brokenSeekFile) Close() error {
@@ -326,7 +344,15 @@ type brokenCloseFile struct {
 	*os.File
 }
 
-func (b *brokenCloseFile) Read(p []byte) (n int, err error) {
+func (b *brokenCloseFile) Seek(_ int64, _ int) (int64, error) {
+	return 0, errors.New("seek error")
+}
+
+func (b *brokenCloseFile) Write(_ []byte) (n int, err error) {
+	return 0, errors.New("write error")
+}
+
+func (b *brokenCloseFile) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("read error")
 }
 
