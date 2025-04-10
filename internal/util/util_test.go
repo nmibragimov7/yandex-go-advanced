@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,6 +48,11 @@ func TestTestRequest(t *testing.T) {
 	defer ts.Close()
 
 	res, body := TestRequest(t, ts, "GET", "/", nil, nil)
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Printf("failed to close body: %s", err.Error())
+		}
+	}()
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.Equal(t, "ok", string(body))
