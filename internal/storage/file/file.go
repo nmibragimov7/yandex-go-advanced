@@ -12,15 +12,12 @@ import (
 	"yandex-go-advanced/internal/models"
 )
 
+// File - interface for file instance
 type File interface {
 	Seek(offset int64, whence int) (int64, error)
 	Read(p []byte) (n int, err error)
 	Write(p []byte) (n int, err error)
 	Close() error
-	//io.Seeker
-	//io.Reader
-	//io.Writer
-	//io.Closer
 }
 
 // Storage - struct that contains the necessary settings
