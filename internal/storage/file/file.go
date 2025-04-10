@@ -6,23 +6,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"yandex-go-advanced/internal/storage/db/shortener"
 
 	"yandex-go-advanced/internal/models"
 )
 
-type fileLike interface {
-	io.Seeker
-	io.Reader
-	io.Writer
-	io.Closer
+type File interface {
+	Seek(offset int64, whence int) (int64, error)
+	Read(p []byte) (n int, err error)
+	Write(p []byte) (n int, err error)
+	Close() error
+	//io.Seeker
+	//io.Reader
+	//io.Writer
+	//io.Closer
 }
 
 // Storage - struct that contains the necessary settings
 type Storage struct {
-	file   fileLike
+	file   File
 	writer *bufio.Writer
 }
 
