@@ -2,13 +2,42 @@ package file
 
 import (
 	"context"
+	"errors"
 	"os"
+	"strings"
 	"testing"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/util"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func createTempFileWithContent(t *testing.T, content string) *os.File {
+	t.Helper()
+
+	f, err := os.CreateTemp("", "set-test")
+	assert.NoError(t, err)
+
+	_, err = f.WriteString(content)
+	assert.NoError(t, err)
+
+	_, err = f.Seek(0, 0)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	})
+	return f
+}
+
+type brokenWriteFile struct {
+	*os.File
+}
+
+func (b *brokenWriteFile) Write(_ []byte) (n int, err error) {
+	return 0, errors.New("failed to write record to file")
+}
 
 func TestSet(t *testing.T) {
 	t.Run("File set", func(t *testing.T) {
@@ -30,7 +59,7 @@ func TestSet(t *testing.T) {
 		assert.NotEmpty(t, originalURL)
 	})
 
-	t.Run("File set with error", func(t *testing.T) {
+	t.Run("File set with already exists error", func(t *testing.T) {
 		_ = os.Remove("./storage.txt")
 
 		str, err := Init("./storage.txt")
@@ -52,6 +81,83 @@ func TestSet(t *testing.T) {
 		assert.Error(t, err)
 		assert.Empty(t, originalURL)
 	})
+
+	t.Run("File set with parse record error", func(t *testing.T) {
+		f := createTempFileWithContent(t, "")
+		s := &Storage{file: f}
+
+		_, err := s.Set("not a struct")
+		assert.EqualError(t, err, "failed to parse record interface")
+	})
+
+	t.Run("File set with seek error", func(t *testing.T) {
+		f := createTempFileWithContent(t, "")
+		err := f.Close()
+		assert.NoError(t, err)
+
+		s := &Storage{file: f}
+
+		rec := &models.ShortenRecord{
+			ShortURL:    "abc",
+			OriginalURL: "https://test.com",
+		}
+
+		_, err = s.Set(rec)
+		assert.ErrorContains(t, err, "seek")
+	})
+
+	t.Run("File set with unmarshal error", func(t *testing.T) {
+		f := createTempFileWithContent(t, "bad-json\n")
+
+		s := &Storage{file: f}
+
+		rec := &models.ShortenRecord{
+			ShortURL:    "abc",
+			OriginalURL: "https://test.com",
+		}
+
+		_, err := s.Set(rec)
+		assert.ErrorContains(t, err, "unmarshal")
+	})
+
+	t.Run("File set with unmarshal error", func(t *testing.T) {
+		f := createTempFileWithContent(t, "bad-json\n")
+
+		s := &Storage{file: f}
+
+		rec := &models.ShortenRecord{
+			ShortURL:    "abc",
+			OriginalURL: "https://test.com",
+		}
+
+		_, err := s.Set(rec)
+		assert.ErrorContains(t, err, "unmarshal")
+	})
+
+	t.Run("File set with write error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "set-test")
+		assert.NoError(t, err)
+
+		s := &Storage{
+			file: &brokenWriteFile{File: f},
+		}
+
+		rec := &models.ShortenRecord{
+			ShortURL:    "abc",
+			OriginalURL: "https://writeerror.com",
+		}
+
+		_, err = s.Set(rec)
+		assert.ErrorContains(t, err, "failed to write record to file")
+	})
+}
+
+type brokenSeekFile struct {
+	*os.File
+}
+
+func (b *brokenSeekFile) Seek(_ int64, _ int) (int64, error) {
+	return 0, errors.New("seek error")
 }
 
 func TestGet(t *testing.T) {
@@ -78,7 +184,7 @@ func TestGet(t *testing.T) {
 		assert.NotEmpty(t, result)
 	})
 
-	t.Run("Memory get with error", func(t *testing.T) {
+	t.Run("File get with no find error", func(t *testing.T) {
 		_ = os.Remove("./storage.txt")
 
 		str, err := Init("./storage.txt")
@@ -99,6 +205,64 @@ func TestGet(t *testing.T) {
 		result, err := str.Get("12345678")
 		assert.Error(t, err)
 		assert.Empty(t, result)
+	})
+
+	t.Run("File get with seek error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "broken")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		st := &Storage{
+			file: &brokenSeekFile{f},
+		}
+
+		_, err = st.Get("key")
+		assert.ErrorContains(t, err, "seek")
+	})
+
+	t.Run("File get with unmarshal error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "bad_json")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		_, err = f.WriteString("not-a-json\n")
+		assert.NoError(t, err)
+		_, err = f.Seek(0, 0)
+		assert.NoError(t, err)
+
+		st := &Storage{
+			file: f,
+		}
+
+		_, err = st.Get("key")
+		assert.ErrorContains(t, err, "unmarshal")
+	})
+
+	t.Run("File get with scanner error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "long_line")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		_, err = f.WriteString(strings.Repeat("a", 1024*1024))
+		assert.NoError(t, err)
+		_, err = f.Seek(0, 0)
+		assert.NoError(t, err)
+
+		st := &Storage{
+			file: f,
+		}
+
+		_, err = st.Get("key")
+		assert.ErrorContains(t, err, "scan")
 	})
 }
 
@@ -150,6 +314,14 @@ func TestSetAll(t *testing.T) {
 	})
 }
 
+type brokenCloseFile struct {
+	*os.File
+}
+
+func (b *brokenCloseFile) Close() error {
+	return errors.New("close error")
+}
+
 func TestClose(t *testing.T) {
 	t.Run("File close", func(t *testing.T) {
 		_ = os.Remove("./storage.txt")
@@ -160,6 +332,22 @@ func TestClose(t *testing.T) {
 
 		err = str.Close()
 		assert.Empty(t, err)
+	})
+
+	t.Run("File close with error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "broken")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		st := &Storage{
+			file: &brokenCloseFile{f},
+		}
+
+		err = st.Close()
+		assert.ErrorContains(t, err, "close")
 	})
 }
 
@@ -182,5 +370,56 @@ func TestInit(t *testing.T) {
 		str, err := Init("./storage.txt")
 		assert.NoError(t, err)
 		assert.NotNil(t, str)
+	})
+
+	t.Run("File initialized with open file error", func(t *testing.T) {
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			return nil, errors.New("open failed")
+		}
+
+		_, err := Init("./storage.txt")
+		assert.ErrorContains(t, err, "open failed")
+	})
+
+	t.Run("File initialized with unmarshal error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "badjson")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		_, err = f.WriteString("this-is-not-json\n")
+		assert.NoError(t, err)
+		_, err = f.Seek(0, 0)
+		assert.NoError(t, err)
+
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			return os.Open(f.Name())
+		}
+
+		_, err = Init("./storage.txt")
+		assert.ErrorContains(t, err, "unmarshal")
+	})
+
+	t.Run("File initialized with scanner error", func(t *testing.T) {
+		f, err := os.CreateTemp("", "long_line")
+		assert.NoError(t, err)
+		defer func(name string) {
+			err = os.Remove(name)
+			assert.NoError(t, err)
+		}(f.Name())
+
+		_, err = f.WriteString(strings.Repeat("a", 1024*1024)) // > bufio.Scanner limit
+		assert.NoError(t, err)
+		_, err = f.Seek(0, 0)
+		assert.NoError(t, err)
+
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			return os.Open(f.Name())
+		}
+
+		_, err = Init("./storage.txt")
+		assert.ErrorContains(t, err, "scanner")
 	})
 }

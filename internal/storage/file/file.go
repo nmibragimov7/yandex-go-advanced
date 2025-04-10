@@ -6,15 +6,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"yandex-go-advanced/internal/storage/db/shortener"
 
 	"yandex-go-advanced/internal/models"
 )
 
+type fileLike interface {
+	io.Seeker
+	io.Reader
+	io.Writer
+	io.Closer
+}
+
 // Storage - struct that contains the necessary settings
 type Storage struct {
-	file   *os.File
+	file   fileLike
 	writer *bufio.Writer
 }
 
@@ -129,9 +137,11 @@ func (s *Storage) Ping(_ context.Context) error { return nil }
 // AddToChannel - func for add value in channel
 func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
+var osOpenFile = os.OpenFile
+
 // Init - initialize file instance
 func Init(path string) (*Storage, error) {
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
+	file, err := osOpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -140,12 +150,12 @@ func Init(path string) (*Storage, error) {
 
 	for scanner.Scan() {
 		var record models.ShortenRecord
-		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
+		if err = json.Unmarshal(scanner.Bytes(), &record); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scanner encountered an error: %w", err)
 	}
 

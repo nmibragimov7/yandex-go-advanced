@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var readRandomBytes = rand.Read
+
 // GetKey - func for get random hash
 func GetKey() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -22,7 +24,7 @@ func GetKey() string {
 	shortID.Grow(length)
 
 	randomBytes := make([]byte, length)
-	_, err := rand.Read(randomBytes)
+	_, err := readRandomBytes(randomBytes)
 	if err != nil {
 		return ""
 		//panic("failed to generate random bytes")
