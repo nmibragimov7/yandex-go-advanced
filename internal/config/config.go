@@ -12,6 +12,7 @@ type Config struct {
 	BaseURL  *string
 	FilePath *string
 	DataBase *string
+	HTTPS    *bool
 }
 
 // Init - initialize config instance
@@ -21,6 +22,7 @@ func Init() *Config {
 		BaseURL:  nil,
 		FilePath: nil,
 		DataBase: nil,
+		HTTPS:    nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
@@ -33,6 +35,7 @@ func Init() *Config {
 		"",
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
+	instance.HTTPS = flags.Bool("s", false, "Enable HTTPS")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -50,6 +53,12 @@ func Init() *Config {
 	}
 	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
 		instance.DataBase = &envDatabase
+	}
+	if envHTTPS, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
+		if envHTTPS == "true" {
+			value := true
+			instance.HTTPS = &value
+		}
 	}
 
 	return &instance

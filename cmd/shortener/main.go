@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
@@ -79,7 +80,24 @@ func run() error {
 	sgr.Log(1, "Build date: ", buildDate)
 	sgr.Log(1, "Build commit: ", buildCommit)
 
-	sgr.Error(http.ListenAndServe(*cnf.Server, rtp.Router()))
+	router := rtp.Router()
+
+	if cnf.HTTPS != nil && *cnf.HTTPS {
+		certFile := "../../cert.pem"
+		keyFile := "../../key.pem"
+
+		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+			sgr.Errorw("HTTPS enabled but cert.pem not found", logKeyError, err.Error())
+			return fmt.Errorf("cert.pem not found")
+		}
+		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+			sgr.Errorw("HTTPS enabled but key.pem not found", logKeyError, err.Error())
+			return fmt.Errorf("key.pem not found")
+		}
+
+		sgr.Error(http.ListenAndServeTLS(*cnf.Server, certFile, keyFile, router))
+	}
+	sgr.Error(http.ListenAndServe(*cnf.Server, router))
 
 	return nil
 }
