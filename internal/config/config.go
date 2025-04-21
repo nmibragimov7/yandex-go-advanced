@@ -18,60 +18,6 @@ type Config struct {
 	Config   *string
 }
 
-// parseFlags - parse flags instance
-func parseFlags() *Config {
-	var instance Config
-
-	flags := flag.NewFlagSet("config", flag.ContinueOnError)
-
-	instance.Server = flags.String("a", ":8080", "Server URL")
-	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
-	instance.FilePath = flags.String("f", "", "File path") // ./storage.txt
-	instance.DataBase = flags.String(
-		"d",
-		"host=localhost user=postgres password=admin dbname=postgres sslmode=disable",
-		"Database URL",
-	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
-	instance.HTTPS = flags.Bool("s", false, "Enable HTTPS")
-	instance.Config = flags.String("c", "", "Config path")
-
-	err := flags.Parse(os.Args[1:])
-	if err != nil {
-		log.Printf("failed to parse flags: %s", err.Error())
-	}
-
-	return &instance
-}
-
-// parseEnv - parse env instance
-func parseEnv() *Config {
-	var instance Config
-
-	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
-		instance.Server = &envServerAddress
-	}
-	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
-		instance.BaseURL = &envBaseURL
-	}
-	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
-		instance.FilePath = &envFileStoragePath
-	}
-	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
-		instance.DataBase = &envDatabase
-	}
-	if envHTTPS, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
-		if envHTTPS == "true" {
-			value := true
-			instance.HTTPS = &value
-		}
-	}
-	if envConfigPath, ok := os.LookupEnv("CONFIG"); ok {
-		instance.Config = &envConfigPath
-	}
-
-	return &instance
-}
-
 // parseJSON - parse json instance
 func parseJSON(config *Config) error {
 	if config.Config == nil {

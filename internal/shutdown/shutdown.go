@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Shutdown - function that handles graceful shutdown of the server
 func Shutdown(server *http.Server, timeout time.Duration) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
