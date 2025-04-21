@@ -21,6 +21,8 @@ var buildVersion = "N/A"
 var buildDate = "N/A"
 var buildCommit = "N/A"
 
+// logKeyError - error constant
+// TimeForShutdown - timeout constant
 const (
 	logKeyError     = "error"
 	TimeForShutdown = 3
