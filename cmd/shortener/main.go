@@ -1,17 +1,19 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-
+	"time"
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/router"
 	"yandex-go-advanced/internal/session"
+	"yandex-go-advanced/internal/shutdown"
 	"yandex-go-advanced/internal/storage"
 )
 
@@ -20,7 +22,8 @@ var buildDate = "N/A"
 var buildCommit = "N/A"
 
 const (
-	logKeyError = "error"
+	logKeyError     = "error"
+	TimeForShutdown = 3
 )
 
 func main() {
@@ -81,23 +84,40 @@ func run() error {
 	sgr.Log(1, "Build commit: ", buildCommit)
 
 	rtr := rtp.Router()
+	server := &http.Server{
+		Addr:    *cnf.Server,
+		Handler: rtr,
+	}
+
+	go func() {
+		shutdown.Shutdown(server, TimeForShutdown*time.Second)
+	}()
 
 	if cnf.HTTPS != nil && *cnf.HTTPS {
 		certFile := "./cert.pem"
 		keyFile := "./key.pem"
 
-		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+		if _, err = os.Stat(certFile); os.IsNotExist(err) {
 			sgr.Errorw("HTTPS enabled but cert.pem not found", logKeyError, err.Error())
-			return fmt.Errorf("cert.pem not found")
+			return errors.New("cert.pem not found")
 		}
-		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+		if _, err = os.Stat(keyFile); os.IsNotExist(err) {
 			sgr.Errorw("HTTPS enabled but key.pem not found", logKeyError, err.Error())
-			return fmt.Errorf("key.pem not found")
+			return errors.New("key.pem not found")
 		}
 
-		sgr.Error(http.ListenAndServeTLS(*cnf.Server, certFile, keyFile, rtr))
+		err = server.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			sgr.Errorw("failed to start server in HTTPS", logKeyError, err.Error())
+			return errors.New("failed to start server in HTTPS")
+		}
 	}
-	sgr.Error(http.ListenAndServe(*cnf.Server, rtr))
+
+	err = server.ListenAndServe()
+	if err != nil {
+		sgr.Errorw("failed to start server in HTTP", logKeyError, err.Error())
+		return errors.New("failed to start server in HTTP")
+	}
 
 	return nil
 }
