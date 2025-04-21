@@ -83,8 +83,8 @@ func run() error {
 	rtr := rtp.Router()
 
 	if cnf.HTTPS != nil && *cnf.HTTPS {
-		certFile := "../../cert.pem"
-		keyFile := "../../key.pem"
+		certFile := "./cert.pem"
+		keyFile := "./key.pem"
 
 		if _, err := os.Stat(certFile); os.IsNotExist(err) {
 			sgr.Errorw("HTTPS enabled but cert.pem not found", logKeyError, err.Error())

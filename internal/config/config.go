@@ -29,7 +29,7 @@ func parseFlags() *Config {
 	instance.FilePath = flags.String("f", "", "File path") // ./storage.txt
 	instance.DataBase = flags.String(
 		"d",
-		"",
+		"host=localhost user=postgres password=admin dbname=postgres sslmode=disable",
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
 	instance.HTTPS = flags.Bool("s", false, "Enable HTTPS")
@@ -73,14 +73,14 @@ func parseEnv() *Config {
 }
 
 // parseJSON - parse json instance
-func parseJSON(config *Config) (error, *Config) {
+func parseJSON(config *Config) error {
 	if config.Config == nil {
-		return nil, config
+		return nil
 	}
 
 	file, err := os.Open(*config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to open config file: %w", err), nil
+		return fmt.Errorf("failed to open config file: %w", err)
 	}
 	defer func(file *os.File) {
 		err = file.Close()
@@ -92,7 +92,7 @@ func parseJSON(config *Config) (error, *Config) {
 	var jsonConf Config
 	decoder := json.NewDecoder(file)
 	if err = decoder.Decode(&jsonConf); err != nil {
-		return err, nil
+		return fmt.Errorf("failed to decode json file: %w", err)
 	}
 	if jsonConf.Server != nil && *jsonConf.Server != "" && *config.Server == "" {
 		config.Server = jsonConf.Server
@@ -110,20 +110,70 @@ func parseJSON(config *Config) (error, *Config) {
 		config.HTTPS = jsonConf.HTTPS
 	}
 
-	return nil, config
+	return nil
 }
 
 // Init - initialize config instance
 func Init() *Config {
-	var instance Config
+	instance := Config{
+		Server:   nil,
+		BaseURL:  nil,
+		FilePath: nil,
+		DataBase: nil,
+		HTTPS:    nil,
+		Config:   nil,
+	}
 
-	instance = *parseFlags()
-	if d := *parseEnv(); d.Server != nil {
-		instance = *parseEnv()
+	flags := flag.NewFlagSet("config", flag.ContinueOnError)
+
+	instance.Server = flags.String("a", ":8080", "Server URL")
+	instance.BaseURL = flags.String("b", "http://localhost:8080", "Base URL")
+	instance.FilePath = flags.String("f", "", "File path") // ./storage.txt
+	instance.DataBase = flags.String(
+		"d",
+		"",
+		"Database URL",
+	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
+	instance.HTTPS = flags.Bool("s", false, "Enable HTTPS")
+	instance.Config = flags.String("c", "", "Config path")
+
+	err := flags.Parse(os.Args[1:])
+	if err != nil {
+		log.Printf("failed to parse flags: %s", err.Error())
 	}
-	if err, cnf := parseJSON(&instance); err == nil {
-		instance = *cnf
+
+	if envServerAddress, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
+		instance.Server = &envServerAddress
 	}
+	if envBaseURL, ok := os.LookupEnv("BASE_URL"); ok {
+		instance.BaseURL = &envBaseURL
+	}
+	if envFileStoragePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
+		instance.FilePath = &envFileStoragePath
+	}
+	if envDatabase, ok := os.LookupEnv("DATABASE_DSN"); ok {
+		instance.DataBase = &envDatabase
+	}
+	if envHTTPS, ok := os.LookupEnv("ENABLE_HTTPS"); ok {
+		if envHTTPS == "true" {
+			value := true
+			instance.HTTPS = &value
+		}
+	}
+	if envConfigPath, ok := os.LookupEnv("CONFIG"); ok {
+		instance.Config = &envConfigPath
+	}
+
+	if err = parseJSON(&instance); err != nil {
+		log.Printf("failed to parse json: %s", err.Error())
+	}
+
+	fmt.Println("Server", *instance.Server)
+	fmt.Println("BaseURL", *instance.BaseURL)
+	fmt.Println("FilePath", *instance.FilePath)
+	fmt.Println("DataBase", *instance.DataBase)
+	fmt.Println("HTTPS", *instance.HTTPS)
+	fmt.Println("Config", *instance.Config)
 
 	return &instance
 }

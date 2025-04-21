@@ -1,7 +1,7 @@
 {
-  "server": ":8080",
-  "base_url": "http://localhost:8080",
+  "server": ":4200",
+  "base_url": "http://localhost:4200",
   "file_path": "",
   "data_base": "",
-  "https": true
+  "https": false
 }
