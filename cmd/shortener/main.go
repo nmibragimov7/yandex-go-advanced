@@ -89,10 +89,6 @@ func run() error {
 		Handler: rtr,
 	}
 
-	go func() {
-		shutdown.Shutdown(server, TimeForShutdown*time.Second)
-	}()
-
 	if cnf.HTTPS != nil && *cnf.HTTPS {
 		certFile := "./cert.pem"
 		keyFile := "./key.pem"
@@ -118,6 +114,10 @@ func run() error {
 		sgr.Errorw("failed to start server in HTTP", logKeyError, err.Error())
 		return errors.New("failed to start server in HTTP")
 	}
+
+	go func() {
+		shutdown.Shutdown(server, TimeForShutdown*time.Second)
+	}()
 
 	return nil
 }
