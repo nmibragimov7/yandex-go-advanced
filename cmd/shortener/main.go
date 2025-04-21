@@ -49,7 +49,7 @@ func run() error {
 		return fmt.Errorf("failed to init storage: %w", err)
 	}
 	defer func() {
-		err := str.Close()
+		err = str.Close()
 		if err != nil {
 			sgr.Errorw(
 				"failed to close storage connection",
@@ -80,7 +80,7 @@ func run() error {
 	sgr.Log(1, "Build date: ", buildDate)
 	sgr.Log(1, "Build commit: ", buildCommit)
 
-	router := rtp.Router()
+	rtr := rtp.Router()
 
 	if cnf.HTTPS != nil && *cnf.HTTPS {
 		certFile := "../../cert.pem"
@@ -95,9 +95,9 @@ func run() error {
 			return fmt.Errorf("key.pem not found")
 		}
 
-		sgr.Error(http.ListenAndServeTLS(*cnf.Server, certFile, keyFile, router))
+		sgr.Error(http.ListenAndServeTLS(*cnf.Server, certFile, keyFile, rtr))
 	}
-	sgr.Error(http.ListenAndServe(*cnf.Server, router))
+	sgr.Error(http.ListenAndServe(*cnf.Server, rtr))
 
 	return nil
 }
