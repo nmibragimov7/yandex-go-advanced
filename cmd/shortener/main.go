@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -91,6 +92,9 @@ func run() error {
 		Handler: rtr,
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if cnf.HTTPS != nil && *cnf.HTTPS {
 		certFile := "./cert.pem"
 		keyFile := "./key.pem"
@@ -117,9 +121,7 @@ func run() error {
 		return errors.New("failed to start server in HTTP")
 	}
 
-	go func() {
-		shutdown.Shutdown(server, TimeForShutdown*time.Second)
-	}()
+	shutdown.Shutdown(ctx, server, TimeForShutdown*time.Second)
 
 	return nil
 }
