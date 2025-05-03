@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"yandex-go-advanced/internal/storage/db/statistics"
 
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
@@ -21,6 +22,7 @@ type Storage interface {
 	AddToChannel(entity string, done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
+	GetStat(entity string) (interface{}, error)
 }
 
 // StorageProvider - struct that contains storage types
@@ -178,6 +180,34 @@ func (p *StorageProvider) Ping(ctx context.Context) error {
 	return nil
 }
 
+// GetStat - func fot return stats
+func (p *StorageProvider) GetStat(entity string) (interface{}, error) {
+	if storage, ok := p.db[entity]; ok {
+		value, err := storage.GetStat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get stats from database: %w", err)
+		}
+
+		return value, nil
+	}
+
+	if p.file != nil {
+		value, err := p.file.GetStat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get stats from file: %w", err)
+		}
+
+		return value, nil
+	}
+
+	value, err := p.memory.GetStat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stats from file: %w", err)
+	}
+
+	return value, nil
+}
+
 // Init - initialize storage instance
 func Init(cnf *config.Config) (Storage, error) {
 	memoryStorage := memory.Init()
@@ -208,6 +238,7 @@ func Init(cnf *config.Config) (Storage, error) {
 			}()
 
 			dbStorages["users"] = &users.Storage{DB: database}
+			dbStorages["statistics"] = &statistics.Storage{DB: database}
 		}
 	}
 

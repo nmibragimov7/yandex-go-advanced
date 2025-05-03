@@ -269,6 +269,11 @@ func (s *Storage) AddToChannel(done chan struct{}, channels ...chan interface{})
 	}
 }
 
+// GetStat - func for return stats
+func (s *Storage) GetStat() (interface{}, error) {
+	return nil, nil
+}
+
 // Flush - func for subscribe channels
 func Flush(s *Storage) {
 	ticker := time.NewTicker(10 * time.Second)

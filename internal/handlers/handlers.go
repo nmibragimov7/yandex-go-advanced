@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,6 +38,7 @@ const (
 	contentLength   = "Content-Length"
 	applicationJSON = "application/json"
 	shortenerTable  = "shortener"
+	statisticsTable = "statistics"
 )
 
 func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
@@ -561,4 +563,45 @@ func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
 	}()
 
 	c.Status(http.StatusAccepted)
+}
+
+// TrustedSubnetHandler - handler for get all shorten urls, users by trusted subnet
+func (p *HandlerProvider) TrustedSubnetHandler(c *gin.Context) {
+	xRealIP := c.GetHeader("X-Real-IP")
+	ip := net.ParseIP(strings.TrimSpace(xRealIP))
+
+	message := models.Response{
+		Message: http.StatusText(http.StatusForbidden),
+	}
+
+	if *p.Config.TrustedSubnet == "" {
+		c.JSON(http.StatusForbidden, message)
+		return
+	}
+
+	_, subnet, err := net.ParseCIDR(*p.Config.TrustedSubnet)
+	if err != nil {
+		c.JSON(http.StatusForbidden, message)
+		return
+	}
+
+	if ip == nil || subnet.Contains(ip) == false {
+		c.JSON(http.StatusForbidden, message)
+		return
+	}
+
+	rec, err := p.Storage.GetStat(statisticsTable)
+	if err != nil {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	record, ok := rec.(*models.StatResponse)
+	if !ok {
+		sendErrorResponse(c, p.Sugar, err)
+		return
+	}
+
+	c.Header(contentType, applicationJSON)
+	c.JSON(http.StatusCreated, record)
 }

@@ -10,12 +10,13 @@ import (
 
 // Config - config struct
 type Config struct {
-	Server   *string `json:"server"`
-	BaseURL  *string `json:"base_url"`
-	FilePath *string `json:"file_path"`
-	DataBase *string `json:"data_base"`
-	HTTPS    *bool   `json:"https"`
-	Config   *string
+	Server        *string `json:"server"`
+	BaseURL       *string `json:"base_url"`
+	FilePath      *string `json:"file_path"`
+	DataBase      *string `json:"data_base"`
+	HTTPS         *bool   `json:"https"`
+	TrustedSubnet *string `json:"trusted_subnet"`
+	Config        *string
 }
 
 // parseJSON - parse json instance
@@ -55,6 +56,9 @@ func parseJSON(config *Config) error {
 	if jsonConf.HTTPS != nil && *jsonConf.HTTPS && !*config.HTTPS {
 		config.HTTPS = jsonConf.HTTPS
 	}
+	if jsonConf.TrustedSubnet != nil && *jsonConf.TrustedSubnet != "" && *config.TrustedSubnet == "" {
+		config.TrustedSubnet = jsonConf.TrustedSubnet
+	}
 
 	return nil
 }
@@ -62,12 +66,13 @@ func parseJSON(config *Config) error {
 // Init - initialize config instance
 func Init() *Config {
 	instance := Config{
-		Server:   nil,
-		BaseURL:  nil,
-		FilePath: nil,
-		DataBase: nil,
-		HTTPS:    nil,
-		Config:   nil,
+		Server:        nil,
+		BaseURL:       nil,
+		FilePath:      nil,
+		DataBase:      nil,
+		HTTPS:         nil,
+		TrustedSubnet: nil,
+		Config:        nil,
 	}
 
 	flags := flag.NewFlagSet("config", flag.ContinueOnError)
@@ -81,6 +86,7 @@ func Init() *Config {
 		"Database URL",
 	) // host=localhost user=postgres password=admin dbname=postgres sslmode=disable
 	instance.HTTPS = flags.Bool("s", false, "Enable HTTPS")
+	instance.TrustedSubnet = flags.String("t", "", "Trusted subnet")
 	instance.Config = flags.String("c", "", "Config path")
 
 	err := flags.Parse(os.Args[1:])
@@ -106,6 +112,9 @@ func Init() *Config {
 			instance.HTTPS = &value
 		}
 	}
+	if envTrustedSubnet, ok := os.LookupEnv("TRUSTED_SUBNET"); ok {
+		instance.TrustedSubnet = &envTrustedSubnet
+	}
 	if envConfigPath, ok := os.LookupEnv("CONFIG"); ok {
 		instance.Config = &envConfigPath
 	}
@@ -119,6 +128,7 @@ func Init() *Config {
 	fmt.Println("FilePath", *instance.FilePath)
 	fmt.Println("DataBase", *instance.DataBase)
 	fmt.Println("HTTPS", *instance.HTTPS)
+	fmt.Println("TrustedSubnet", *instance.TrustedSubnet)
 	fmt.Println("Config", *instance.Config)
 
 	return &instance

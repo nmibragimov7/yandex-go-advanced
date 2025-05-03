@@ -13,4 +13,5 @@ type Handler interface {
 	ShortenBatchHandler(c *gin.Context)
 	UserUrlsHandler(c *gin.Context)
 	UserUrlsDeleteHandler(c *gin.Context)
+	TrustedSubnetHandler(c *gin.Context)
 }
