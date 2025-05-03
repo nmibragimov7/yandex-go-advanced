@@ -13,6 +13,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+// Repository - interface for database instance
 type Repository interface {
 	Get(key string) (interface{}, error)
 	GetAll(key interface{}) ([]interface{}, error)
@@ -23,6 +24,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 }
 
+// Init - initialize database instance
 func Init(path string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", path)
 	if err != nil {

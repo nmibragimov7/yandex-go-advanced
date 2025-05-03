@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/storage/db"
 	"yandex-go-advanced/internal/storage/db/shortener"
@@ -11,6 +12,7 @@ import (
 	"yandex-go-advanced/internal/storage/memory"
 )
 
+// Storage - interface for storage instance
 type Storage interface {
 	Get(entity string, key string) (interface{}, error)
 	GetAll(entity string, key interface{}) ([]interface{}, error)
@@ -21,12 +23,14 @@ type Storage interface {
 	Ping(ctx context.Context) error
 }
 
+// StorageProvider - struct that contains storage types
 type StorageProvider struct {
 	db     map[string]db.Repository
 	file   *file.Storage
 	memory *memory.Storage
 }
 
+// Get - func for return record
 func (p *StorageProvider) Get(entity string, key string) (interface{}, error) {
 	if storage, ok := p.db[entity]; ok {
 		value, err := storage.Get(key)
@@ -54,6 +58,7 @@ func (p *StorageProvider) Get(entity string, key string) (interface{}, error) {
 	return value, nil
 }
 
+// GetAll - func for return records
 func (p *StorageProvider) GetAll(entity string, key interface{}) ([]interface{}, error) {
 	if storage, ok := p.db[entity]; ok {
 		value, err := storage.GetAll(key)
@@ -81,6 +86,7 @@ func (p *StorageProvider) GetAll(entity string, key interface{}) ([]interface{},
 	return value, nil
 }
 
+// Set - func for saving record in storage
 func (p *StorageProvider) Set(entity string, record interface{}) (interface{}, error) {
 	if storage, ok := p.db[entity]; ok {
 		data, err := storage.Set(record)
@@ -108,6 +114,7 @@ func (p *StorageProvider) Set(entity string, record interface{}) (interface{}, e
 	return data, nil
 }
 
+// SetAll - func for saving records in storage
 func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	if storage, ok := p.db[entity]; ok {
 		err := storage.SetAll(records)
@@ -136,12 +143,14 @@ func (p *StorageProvider) SetAll(entity string, records []interface{}) error {
 	return nil
 }
 
+// AddToChannel - func for add value in channel
 func (p *StorageProvider) AddToChannel(entity string, done chan struct{}, channels ...chan interface{}) {
 	if storage, ok := p.db[entity]; ok {
 		storage.AddToChannel(done, channels...)
 	}
 }
 
+// Close - func for close storage
 func (p *StorageProvider) Close() error {
 	if p.file != nil {
 		if err := p.file.Close(); err != nil {
@@ -158,6 +167,7 @@ func (p *StorageProvider) Close() error {
 	return nil
 }
 
+// Ping - func for ping storage
 func (p *StorageProvider) Ping(ctx context.Context) error {
 	for entity, storage := range p.db {
 		if err := storage.Ping(ctx); err != nil {
@@ -168,6 +178,7 @@ func (p *StorageProvider) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Init - initialize storage instance
 func Init(cnf *config.Config) (Storage, error) {
 	memoryStorage := memory.Init()
 

@@ -7,14 +7,26 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"yandex-go-advanced/internal/storage/db/shortener"
+
 	"yandex-go-advanced/internal/models"
 )
 
+// File - interface for file instance
+type File interface {
+	Seek(offset int64, whence int) (int64, error)
+	Read(p []byte) (n int, err error)
+	Write(p []byte) (n int, err error)
+	Close() error
+}
+
+// Storage - struct that contains the necessary settings
 type Storage struct {
-	file   *os.File
+	file   File
 	writer *bufio.Writer
 }
 
+// Get - func for return record
 func (s *Storage) Get(key string) (interface{}, error) {
 	if _, err := s.file.Seek(0, 0); err != nil {
 		return nil, fmt.Errorf("failed to seek file: %w", err)
@@ -40,14 +52,37 @@ func (s *Storage) Get(key string) (interface{}, error) {
 	return nil, errors.New("failed to find record")
 }
 
+// GetAll - func for return records
 func (s *Storage) GetAll(_ interface{}) ([]interface{}, error) {
 	return nil, nil
 }
 
+// Set - func for saving record in file
 func (s *Storage) Set(record interface{}) (interface{}, error) {
 	rec, ok := record.(*models.ShortenRecord)
 	if !ok {
 		return nil, errors.New("failed to parse record interface")
+	}
+
+	if _, err := s.file.Seek(0, 0); err != nil {
+		return nil, fmt.Errorf("failed to seek file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(s.file)
+
+	for scanner.Scan() {
+		var item models.ShortenRecord
+		if err := json.Unmarshal(scanner.Bytes(), &item); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
+		}
+
+		if item.OriginalURL == rec.OriginalURL {
+			return nil, fmt.Errorf("shortener already exists: %w", shortener.NewDuplicateError(
+				rec.ShortURL,
+				"23505",
+				errors.New("shortener already exists"),
+			))
+		}
 	}
 
 	data, err := json.Marshal(rec)
@@ -62,6 +97,7 @@ func (s *Storage) Set(record interface{}) (interface{}, error) {
 	return n, nil
 }
 
+// SetAll - func for saving records in file
 func (s *Storage) SetAll(records []interface{}) error {
 	rcs := make([]*models.ShortenRecord, 0, len(records))
 	for _, record := range records {
@@ -87,6 +123,7 @@ func (s *Storage) SetAll(records []interface{}) error {
 	return nil
 }
 
+// Close - func for close file
 func (s *Storage) Close() error {
 	if err := s.file.Close(); err != nil {
 		return fmt.Errorf("failed to close file: %w", err)
@@ -94,12 +131,17 @@ func (s *Storage) Close() error {
 	return nil
 }
 
+// Ping - func for ping file
 func (s *Storage) Ping(_ context.Context) error { return nil }
 
+// AddToChannel - func for add value in channel
 func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
+var osOpenFile = os.OpenFile
+
+// Init - initialize file instance
 func Init(path string) (*Storage, error) {
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
+	file, err := osOpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -108,12 +150,12 @@ func Init(path string) (*Storage, error) {
 
 	for scanner.Scan() {
 		var record models.ShortenRecord
-		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
+		if err = json.Unmarshal(scanner.Bytes(), &record); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal file record: %w", err)
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scanner encountered an error: %w", err)
 	}
 

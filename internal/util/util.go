@@ -3,25 +3,41 @@ package util
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
+var readRandomBytes = rand.Read
+
+// GetKey - func for get random hash
 func GetKey() string {
-	b := make([]byte, 8)
-	if _, err := rand.Read(b); err != nil {
-		panic(err)
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 8
+	var shortID strings.Builder
+
+	shortID.Grow(length)
+
+	randomBytes := make([]byte, length)
+	_, err := readRandomBytes(randomBytes)
+	if err != nil {
+		return ""
+		//panic("failed to generate random bytes")
 	}
 
-	return base64.URLEncoding.EncodeToString(b)[:8]
+	for _, b := range randomBytes {
+		shortID.WriteByte(charset[b%byte(len(charset))])
+	}
+
+	return shortID.String()
 }
 
+// TestRequest - func for testing
 func TestRequest(
 	t *testing.T,
 	ts *httptest.Server,
@@ -45,7 +61,7 @@ func TestRequest(
 	res, err := ts.Client().Do(req)
 	require.NoError(t, err)
 	defer func() {
-		if err := res.Body.Close(); err != nil {
+		if err = res.Body.Close(); err != nil {
 			log.Printf("failed to close body: %s", err.Error())
 		}
 	}()

@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/models"
 	"yandex-go-advanced/internal/session"
@@ -18,6 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// HandlerProvider - struct that contains the necessary handler settings
 type HandlerProvider struct {
 	Config  *config.Config
 	Storage storage.Storage
@@ -26,6 +29,7 @@ type HandlerProvider struct {
 }
 
 const (
+	cookieName      = "user_token"
 	logKeyError     = "error"
 	logKeyURI       = "uri"
 	logKeyIP        = "ip"
@@ -64,11 +68,13 @@ func sendErrorResponse(c *gin.Context, sgr *zap.SugaredLogger, err error) {
 	c.JSON(http.StatusInternalServerError, message)
 }
 
+// MainPage - base handler for short url
 func (p *HandlerProvider) MainPage(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		cookie, _ := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -85,15 +91,22 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		}
 	}
 
-	if c.Request.Method != http.MethodPost {
-		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
+	if strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
+		p.Sugar.With(
+			logKeyURI, c.Request.URL.Path,
+			logKeyIP, c.ClientIP(),
+		).Error(
+			errors.New("no content type"),
+		)
+
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		_, err = c.Writer.WriteString(http.StatusText(http.StatusInternalServerError))
 		if err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
 			).Error(
-				err,
+				errors.New("no content type"),
 			)
 		}
 		return
@@ -183,35 +196,10 @@ func (p *HandlerProvider) MainPage(c *gin.Context) {
 		return
 	}
 }
-func (p *HandlerProvider) IDPage(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.Writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusMethodNotAllowed))
-		if err != nil {
-			p.Sugar.With(
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			).Error(
-				err,
-			)
-		}
-		return
-	}
 
+// IDPage - handler for get url by id
+func (p *HandlerProvider) IDPage(c *gin.Context) {
 	path := c.Param("id")
-	if path == "" {
-		c.Writer.WriteHeader(http.StatusNotFound)
-		_, err := c.Writer.WriteString(http.StatusText(http.StatusNotFound))
-		if err != nil {
-			p.Sugar.With(
-				logKeyURI, c.Request.URL.Path,
-				logKeyIP, c.ClientIP(),
-			).Error(
-				err,
-			)
-		}
-		return
-	}
 
 	rec, err := p.Storage.Get(shortenerTable, path)
 	if err != nil {
@@ -279,11 +267,14 @@ func (p *HandlerProvider) IDPage(c *gin.Context) {
 
 	c.Redirect(http.StatusTemporaryRedirect, record.OriginalURL)
 }
+
+// ShortenHandler - handler for short url by json
 func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		cookie, _ := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -306,7 +297,7 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
-	if err := json.Unmarshal(bytes, &body); err != nil {
+	if err = json.Unmarshal(bytes, &body); err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
@@ -382,6 +373,8 @@ func (p *HandlerProvider) ShortenHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, response)
 }
+
+// PingHandler - handler for ping storage
 func (p *HandlerProvider) PingHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -396,13 +389,17 @@ func (p *HandlerProvider) PingHandler(c *gin.Context) {
 		return
 	}
 
+	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, models.Response{Message: "database is connected"})
 }
+
+// ShortenBatchHandler - handler for short url batches
 func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	var userID int64
 	var err error
 	if *p.Config.DataBase != "" {
-		if userID, err = p.Session.ParseToken(c); err != nil {
+		cookie, _ := c.Cookie(cookieName)
+		if userID, err = p.Session.ParseCookie(cookie); err != nil {
 			p.Sugar.With(
 				logKeyURI, c.Request.URL.Path,
 				logKeyIP, c.ClientIP(),
@@ -425,7 +422,7 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
-	if err := json.Unmarshal(bytes, &body); err != nil {
+	if err = json.Unmarshal(bytes, &body); err != nil {
 		sendErrorResponse(c, p.Sugar, err)
 		return
 	}
@@ -454,8 +451,11 @@ func (p *HandlerProvider) ShortenBatchHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusCreated, result)
 }
+
+// UserUrlsHandler - handler for get user short urls
 func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
-	userID, err := p.Session.ParseToken(c)
+	cookie, _ := c.Cookie(cookieName)
+	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,
@@ -503,8 +503,11 @@ func (p *HandlerProvider) UserUrlsHandler(c *gin.Context) {
 	c.Header(contentType, applicationJSON)
 	c.JSON(http.StatusOK, records)
 }
+
+// UserUrlsDeleteHandler - handler for remove user short urls
 func (p *HandlerProvider) UserUrlsDeleteHandler(c *gin.Context) {
-	userID, err := p.Session.ParseToken(c)
+	cookie, _ := c.Cookie(cookieName)
+	userID, err := p.Session.ParseCookie(cookie)
 	if err != nil {
 		p.Sugar.With(
 			logKeyURI, c.Request.URL.Path,

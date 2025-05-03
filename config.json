@@ -1,0 +1,7 @@
+{
+  "server": ":4200",
+  "base_url": "http://localhost:4200",
+  "file_path": "",
+  "data_base": "",
+  "https": false
+}
