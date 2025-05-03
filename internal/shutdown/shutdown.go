@@ -4,24 +4,22 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 )
 
 // Shutdown - function that handles graceful shutdown of the server
-func Shutdown(ctx context.Context, server *http.Server, timeout time.Duration) {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+func Shutdown(server *http.Server, timeout time.Duration) {
+	// Создаем контекст, который будет отменён при получении сигнала завершения
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
-	select {
-	case <-ctx.Done():
-		log.Println("context canceled, shutting down...")
-	case sig := <-stop:
-		log.Printf("received signal: %s, shutting down...", sig)
-	}
+	// Ожидаем отмены контекста (например, по сигналу)
+	<-ctx.Done()
+	log.Println("shutdown signal received, shutting down...")
 
+	// Контекст с таймаутом на завершение сервера
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
