@@ -585,7 +585,7 @@ func (p *HandlerProvider) TrustedSubnetHandler(c *gin.Context) {
 		return
 	}
 
-	if ip == nil || subnet.Contains(ip) == false {
+	if ip == nil || !subnet.Contains(ip) {
 		c.JSON(http.StatusForbidden, message)
 		return
 	}
