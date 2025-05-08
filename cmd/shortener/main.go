@@ -49,7 +49,7 @@ func run() error {
 	if err != nil {
 		sgr.Errorw(
 			"failed to init storage",
-			"error", err.Error(),
+			logKeyError, err.Error(),
 		)
 
 		return fmt.Errorf("failed to init storage: %w", err)
