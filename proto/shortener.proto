@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "yandex-go-advanced/proto/shortener;shortener";
+import "google/protobuf/empty.proto";
+
+message ShortenRecord {
+  string short_url = 1;
+  string original_url = 2;
+  int64 user_id = 3;
+  bool is_deleted = 4;
+}
+
+message ShortenRequest {
+  string url = 1;
+}
+
+message ShortenResponse {
+  string url = 1;
+}
+
+message GetItemRequest {
+  string id = 1;
+}
+
+message GetItemResponse {
+  string url = 1;
+}
+
+message PingResponse {
+  string message = 1;
+}
+
+message ShortenBatchRequest {
+  repeated ShortenBatchItem items = 1;
+}
+
+message ShortenBatchItem {
+  string correlation_id = 1;
+  string original_url = 2;
+}
+
+message ShortenBatchResponse {
+  repeated ShortenBatchResult results = 1;
+}
+
+message ShortenBatchResult {
+  string correlation_id = 1;
+  string short_url = 2;
+}
+
+message UserUrlsResponse {
+  repeated UserUrlsResult results = 1;
+}
+
+message UserUrlsResult {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+message UserUrlsDeleteRequest {
+  repeated UserUrlsDeleteItem items = 1;
+}
+
+message UserUrlsDeleteItem {
+  string short_url = 1;
+}
+
+message ShortenBatchUpdateRecord {
+  string short_url = 1;
+  int64 user_id = 2;
+}
+
+message UserUrlsDeleteResponse {
+  string message = 1;
+}
+
+message TrustedSubnetRequest {
+  string x_real_ip = 1;
+}
+
+message TrustedSubnetResponse {
+  int64 users = 1;
+  int64 urls = 2;
+}
+
+service ShortenerService {
+  rpc MainPage (ShortenRequest) returns (ShortenResponse);
+  rpc GetItem (GetItemRequest) returns (GetItemResponse);
+  rpc ShortenHandler (ShortenRequest) returns (ShortenResponse);
+  rpc PingHandler (google.protobuf.Empty) returns (PingResponse);
+  rpc ShortenBatchHandler (ShortenBatchRequest) returns (ShortenBatchResponse);
+  rpc UserUrlsHandler (google.protobuf.Empty) returns (UserUrlsResponse);
+  rpc UserUrlsDeleteHandler (UserUrlsDeleteRequest) returns (UserUrlsDeleteResponse);
+  rpc TrustedSubnetHandler (TrustedSubnetRequest) returns (TrustedSubnetResponse);
+}
