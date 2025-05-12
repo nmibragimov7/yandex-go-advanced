@@ -59,7 +59,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterShortenerServiceServer(s, &grpc_handlers.HandlerProvider{
+	pb.RegisterShortenerServiceServer(s, &grpcHandlers.HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
