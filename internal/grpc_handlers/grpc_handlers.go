@@ -43,7 +43,7 @@ const (
 
 // MainPage - base handler for short url
 func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (*pb.ShortenResponse, error) {
-	userID := ctx.Value("userID").(int64)
+	userID := ctx.Value(userIDKey).(int64)
 
 	url := in.Url
 
@@ -103,7 +103,7 @@ func (p *HandlerProvider) GetItem(_ context.Context, in *pb.GetItemRequest) (*pb
 
 // ShortenHandler - handler for short url by json
 func (p *HandlerProvider) ShortenHandler(ctx context.Context, in *pb.ShortenRequest) (*pb.ShortenResponse, error) {
-	userID := ctx.Value("userID").(int64)
+	userID := ctx.Value(userIDKey).(int64)
 	var err error
 
 	url := in.Url
@@ -157,7 +157,7 @@ func (p *HandlerProvider) PingHandler(ctx context.Context, _ *emptypb.Empty) (*p
 
 // ShortenBatchHandler - handler for short url batches
 func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.ShortenBatchRequest) (*pb.ShortenBatchResponse, error) {
-	userID := ctx.Value("userID").(int64)
+	userID := ctx.Value(userIDKey).(int64)
 	var err error
 
 	values := make([]interface{}, 0, len(in.Items))
@@ -186,7 +186,7 @@ func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.Shorte
 
 // UserUrlsHandler - handler for get user short urls
 func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) (*pb.UserUrlsResponse, error) {
-	userID := ctx.Value("userID").(int64)
+	userID := ctx.Value(userIDKey).(int64)
 	var err error
 
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
@@ -218,7 +218,7 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 
 // UserUrlsDeleteHandler - handler for remove user short urls
 func (p HandlerProvider) UserUrlsDeleteHandler(ctx context.Context, in *pb.UserUrlsDeleteRequest) (*pb.UserUrlsDeleteResponse, error) {
-	userID := ctx.Value("userID").(int64)
+	userID := ctx.Value(userIDKey).(int64)
 
 	generate := func(userID int64, key string) chan interface{} {
 		out := make(chan interface{}, 1)

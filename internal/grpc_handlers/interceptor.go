@@ -20,7 +20,9 @@ type InterceptorProvider struct {
 	Session *session.SessionProvider
 }
 
-const userIDKey string = "userID"
+type ctxKey string
+
+const userIDKey ctxKey = "userID"
 
 func (p *InterceptorProvider) AuthInterceptor() grpc.UnaryServerInterceptor {
 	return func(
