@@ -33,6 +33,7 @@ const (
 	cookieName         = "user_token"
 	shortenerTable     = "shortener"
 	statisticsTable    = "statistics"
+	logKeyMethod       = "method"
 	duplicateErrorKey  = "duplicate error"
 	saveErrorKey       = "failed to store record"
 	getErrorKey        = "failed to get record"
@@ -43,7 +44,6 @@ const (
 // MainPage - base handler for short url
 func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (*pb.ShortenResponse, error) {
 	userID := ctx.Value("userID").(int64)
-	var err error
 
 	url := in.Url
 
@@ -55,11 +55,15 @@ func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (
 		IsDeleted:   false,
 	}
 
-	_, err = p.Storage.Set(shortenerTable, record)
+	_, err := p.Storage.Set(shortenerTable, record)
 	if err != nil {
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
-			p.Sugar.Error(duplicateErrorKey)
+			p.Sugar.With(
+				logKeyMethod, "MainPage",
+			).Error(
+				err,
+			)
 			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
