@@ -20,6 +20,8 @@ type InterceptorProvider struct {
 	Session *session.SessionProvider
 }
 
+const userIDKey string = "userID"
+
 func (p *InterceptorProvider) AuthInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -58,7 +60,7 @@ func (p *InterceptorProvider) AuthInterceptor() grpc.UnaryServerInterceptor {
 			}
 		}
 
-		ctx = context.WithValue(ctx, "userID", userID)
+		ctx = context.WithValue(ctx, userIDKey, userID)
 		return handler(ctx, req)
 	}
 }

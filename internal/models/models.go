@@ -44,7 +44,7 @@ type ShortenBatchUpdateRequest struct {
 	UserID   int64  `json:"user_id"`
 }
 
-// StatResponse - struct for statistics response
+// StatResponse - struct for statistics response.
 type StatResponse struct {
 	Users int64 `json:"users"`
 	Urls  int64 `json:"urls"`

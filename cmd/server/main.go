@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 	"yandex-go-advanced/internal/config"
-	"yandex-go-advanced/internal/grpc_handlers"
+	grpchandlers "yandex-go-advanced/internal/grpc_handlers"
 	"yandex-go-advanced/internal/logger"
 	"yandex-go-advanced/internal/session"
 	"yandex-go-advanced/internal/storage"

@@ -59,11 +59,7 @@ func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (
 	if err != nil {
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
-			p.Sugar.With(
-				logKeyMethod, "MainPage",
-			).Error(
-				err,
-			)
+			p.Sugar.Error(duplicateErrorKey)
 			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
