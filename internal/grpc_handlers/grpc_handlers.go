@@ -251,6 +251,12 @@ func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.Shorte
 		})
 	}
 
+	err = p.Storage.SetAll(shortenerTable, values)
+	if err != nil {
+		p.Sugar.Error("failed to store records")
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &pb.ShortenBatchResponse{Results: result}, nil
 }
 
