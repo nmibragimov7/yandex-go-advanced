@@ -30,9 +30,14 @@ type HandlerProvider struct {
 }
 
 const (
-	cookieName      = "user_token"
-	shortenerTable  = "shortener"
-	statisticsTable = "statistics"
+	cookieName         = "user_token"
+	shortenerTable     = "shortener"
+	statisticsTable    = "statistics"
+	duplicateErrorKey  = "duplicate error"
+	saveErrorKey       = "failed to store record"
+	getErrorKey        = "failed to get record"
+	invalidErrorKey    = "invalid record"
+	permissionErrorKey = "permission denied"
 )
 
 // MainPage - base handler for short url
@@ -54,11 +59,11 @@ func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (
 	if err != nil {
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
-			p.Sugar.Error("duplicate error")
+			p.Sugar.Error(duplicateErrorKey)
 			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
-		p.Sugar.Error("failed to store record")
+		p.Sugar.Error(saveErrorKey)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store record: %s", err.Error()))
 	}
 
@@ -73,14 +78,14 @@ func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (
 func (p *HandlerProvider) GetItem(_ context.Context, in *pb.GetItemRequest) (*pb.GetItemResponse, error) {
 	rec, err := p.Storage.Get(shortenerTable, in.GetId())
 	if err != nil {
-		p.Sugar.Error("failed to get record")
+		p.Sugar.Error(getErrorKey)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get record: %s", err.Error()))
 	}
 
 	record, ok := rec.(*pb.ShortenRecord)
 	if !ok {
-		p.Sugar.Error("invalid record")
-		return nil, status.Error(codes.Internal, "invalid record")
+		p.Sugar.Error(invalidErrorKey)
+		return nil, status.Error(codes.Internal, invalidErrorKey)
 	}
 
 	if record.IsDeleted {
@@ -115,11 +120,11 @@ func (p *HandlerProvider) ShortenHandler(ctx context.Context, in *pb.ShortenRequ
 	if err != nil {
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
-			p.Sugar.Error("duplicate error")
+			p.Sugar.Error(duplicateErrorKey)
 			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
-		p.Sugar.Error("failed to store record")
+		p.Sugar.Error(saveErrorKey)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store record: %s", err.Error()))
 	}
 
@@ -172,7 +177,7 @@ func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.Shorte
 
 	err = p.Storage.SetAll(shortenerTable, values)
 	if err != nil {
-		p.Sugar.Error("failed to store records")
+		p.Sugar.Error(saveErrorKey)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store records: %s", err.Error()))
 	}
 
@@ -186,7 +191,7 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
-		p.Sugar.Error("failed to get records")
+		p.Sugar.Error(getErrorKey)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get records: %s", err.Error()))
 	}
 
@@ -199,8 +204,8 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 	for _, rc := range rcs {
 		value, ok := rc.(*pb.UserUrlsResult)
 		if !ok {
-			p.Sugar.Error("invalid record")
-			return nil, status.Error(codes.Internal, "invalid record")
+			p.Sugar.Error(invalidErrorKey)
+			return nil, status.Error(codes.Internal, invalidErrorKey)
 		}
 		records = append(records, &pb.UserUrlsResult{
 			ShortUrl:    *p.Config.BaseURL + "/" + value.ShortUrl,
@@ -249,19 +254,19 @@ func (p *HandlerProvider) TrustedSubnetHandler(_ context.Context, in *pb.Trusted
 	ip := net.ParseIP(strings.TrimSpace(xRealIP))
 
 	if *p.Config.TrustedSubnet == "" {
-		p.Sugar.Error("permission denied")
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+		p.Sugar.Error(permissionErrorKey)
+		return nil, status.Error(codes.PermissionDenied, permissionErrorKey)
 	}
 
 	_, subnet, err := net.ParseCIDR(*p.Config.TrustedSubnet)
 	if err != nil {
-		p.Sugar.Error("permission denied")
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+		p.Sugar.Error(permissionErrorKey)
+		return nil, status.Error(codes.PermissionDenied, permissionErrorKey)
 	}
 
 	if ip == nil || !subnet.Contains(ip) {
-		p.Sugar.Error("permission denied")
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+		p.Sugar.Error(permissionErrorKey)
+		return nil, status.Error(codes.PermissionDenied, permissionErrorKey)
 	}
 
 	rec, err := p.Storage.GetStat(statisticsTable)
@@ -272,8 +277,8 @@ func (p *HandlerProvider) TrustedSubnetHandler(_ context.Context, in *pb.Trusted
 
 	record, ok := rec.(*pb.TrustedSubnetResponse)
 	if !ok {
-		p.Sugar.Error("invalid record")
-		return nil, status.Error(codes.Internal, "invalid record")
+		p.Sugar.Error(invalidErrorKey)
+		return nil, status.Error(codes.Internal, invalidErrorKey)
 	}
 
 	return record, nil
