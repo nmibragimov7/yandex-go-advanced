@@ -3,6 +3,7 @@ package grpchandlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 	"yandex-go-advanced/internal/config"
@@ -54,11 +55,11 @@ func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
 			p.Sugar.Error("duplicate error")
-			return nil, status.Error(codes.AlreadyExists, err.Error())
+			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
 		p.Sugar.Error("failed to store record")
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store record: %s", err.Error()))
 	}
 
 	response := pb.ShortenResponse{
@@ -73,7 +74,7 @@ func (p *HandlerProvider) GetItem(_ context.Context, in *pb.GetItemRequest) (*pb
 	rec, err := p.Storage.Get(shortenerTable, in.GetId())
 	if err != nil {
 		p.Sugar.Error("failed to get record")
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get record: %s", err.Error()))
 	}
 
 	record, ok := rec.(*pb.ShortenRecord)
@@ -115,11 +116,11 @@ func (p *HandlerProvider) ShortenHandler(ctx context.Context, in *pb.ShortenRequ
 		var duplicateError *shortener.DuplicateError
 		if errors.As(err, &duplicateError) {
 			p.Sugar.Error("duplicate error")
-			return nil, status.Error(codes.AlreadyExists, err.Error())
+			return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("duplicate error: %s", err.Error()))
 		}
 
 		p.Sugar.Error("failed to store record")
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store record: %s", err.Error()))
 	}
 
 	response := pb.ShortenResponse{
@@ -139,7 +140,7 @@ func (p *HandlerProvider) PingHandler(ctx context.Context, _ *emptypb.Empty) (*p
 	err := p.Storage.Ping(ctx)
 	if err != nil {
 		p.Sugar.Error("failed to ping database")
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to ping database: %s", err.Error()))
 	}
 
 	response := pb.PingResponse{
@@ -172,7 +173,7 @@ func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.Shorte
 	err = p.Storage.SetAll(shortenerTable, values)
 	if err != nil {
 		p.Sugar.Error("failed to store records")
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store records: %s", err.Error()))
 	}
 
 	return &pb.ShortenBatchResponse{Results: result}, nil
@@ -185,21 +186,21 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
-		p.Sugar.Error("failed to get shortener records")
-		return nil, status.Error(codes.Internal, err.Error())
+		p.Sugar.Error("failed to get records")
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get records: %s", err.Error()))
 	}
 
 	if len(rcs) == 0 {
-		p.Sugar.Error("shortener records not found")
-		return nil, status.Error(codes.NotFound, "shortener records not found")
+		p.Sugar.Error("records not found")
+		return nil, status.Error(codes.NotFound, "records not found")
 	}
 
 	records := make([]*pb.UserUrlsResult, 0, len(rcs))
 	for _, rc := range rcs {
 		value, ok := rc.(*pb.UserUrlsResult)
 		if !ok {
-			p.Sugar.Error("invalid shorten record")
-			return nil, status.Error(codes.Internal, "invalid shorten record")
+			p.Sugar.Error("invalid record")
+			return nil, status.Error(codes.Internal, "invalid record")
 		}
 		records = append(records, &pb.UserUrlsResult{
 			ShortUrl:    *p.Config.BaseURL + "/" + value.ShortUrl,
