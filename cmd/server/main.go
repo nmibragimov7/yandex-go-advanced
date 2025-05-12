@@ -58,8 +58,17 @@ func main() {
 		)
 		log.Fatal(err)
 	}
-	s := grpc.NewServer()
-	pb.RegisterShortenerServiceServer(s, &grpcHandlers.HandlerProvider{
+
+	inp := grpchandlers.InterceptorProvider{
+		Config:  cnf,
+		Sugar:   sgr,
+		Session: ssp,
+	}
+
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(inp.AuthInterceptor()),
+	)
+	pb.RegisterShortenerServiceServer(server, &grpchandlers.HandlerProvider{
 		Config:  cnf,
 		Storage: str,
 		Sugar:   sgr,
@@ -68,7 +77,7 @@ func main() {
 
 	sgr.Log(1, "server gRPC started in: ", *cnf.Server)
 
-	if err := s.Serve(listen); err != nil {
+	if err := server.Serve(listen); err != nil {
 		sgr.Errorw(
 			"failed to serve",
 			logKeyError, err.Error(),

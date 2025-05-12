@@ -1,4 +1,4 @@
-package grpcHandlers
+package grpchandlers
 
 import (
 	"context"
@@ -15,7 +15,6 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -37,35 +36,8 @@ const (
 
 // MainPage - base handler for short url
 func (p *HandlerProvider) MainPage(ctx context.Context, in *pb.ShortenRequest) (*pb.ShortenResponse, error) {
-	var userID int64
+	userID := ctx.Value("userID").(int64)
 	var err error
-	if *p.Config.DataBase != "" {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			p.Sugar.Error("no metadata in context")
-			return nil, status.Error(codes.Unauthenticated, "missing metadata")
-		}
-
-		cookieHeaders := md.Get("cookie")
-		if len(cookieHeaders) == 0 {
-			p.Sugar.Error("no cookie header")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-
-		var token string
-		cookies := strings.Split(cookieHeaders[0], "; ")
-		for _, c := range cookies {
-			if strings.HasPrefix(c, cookieName+"=") {
-				token = strings.TrimPrefix(c, cookieName+"=")
-				break
-			}
-		}
-
-		if userID, err = p.Session.ParseCookie(token); err != nil {
-			p.Sugar.Error("missing cookie")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-	}
 
 	url := in.Url
 
@@ -125,35 +97,8 @@ func (p *HandlerProvider) GetItem(_ context.Context, in *pb.GetItemRequest) (*pb
 
 // ShortenHandler - handler for short url by json
 func (p *HandlerProvider) ShortenHandler(ctx context.Context, in *pb.ShortenRequest) (*pb.ShortenResponse, error) {
-	var userID int64
+	userID := ctx.Value("userID").(int64)
 	var err error
-	if *p.Config.DataBase != "" {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			p.Sugar.Error("no metadata in context")
-			return nil, status.Error(codes.Unauthenticated, "missing metadata")
-		}
-
-		cookieHeaders := md.Get("cookie")
-		if len(cookieHeaders) == 0 {
-			p.Sugar.Error("no cookie header")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-
-		var token string
-		cookies := strings.Split(cookieHeaders[0], "; ")
-		for _, c := range cookies {
-			if strings.HasPrefix(c, cookieName+"=") {
-				token = strings.TrimPrefix(c, cookieName+"=")
-				break
-			}
-		}
-
-		if userID, err = p.Session.ParseCookie(token); err != nil {
-			p.Sugar.Error("missing cookie")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-	}
 
 	url := in.Url
 
@@ -206,35 +151,8 @@ func (p *HandlerProvider) PingHandler(ctx context.Context, _ *emptypb.Empty) (*p
 
 // ShortenBatchHandler - handler for short url batches
 func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.ShortenBatchRequest) (*pb.ShortenBatchResponse, error) {
-	var userID int64
+	userID := ctx.Value("userID").(int64)
 	var err error
-	if *p.Config.DataBase != "" {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			p.Sugar.Error("no metadata in context")
-			return nil, status.Error(codes.Unauthenticated, "missing metadata")
-		}
-
-		cookieHeaders := md.Get("cookie")
-		if len(cookieHeaders) == 0 {
-			p.Sugar.Error("no cookie header")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-
-		var token string
-		cookies := strings.Split(cookieHeaders[0], "; ")
-		for _, c := range cookies {
-			if strings.HasPrefix(c, cookieName+"=") {
-				token = strings.TrimPrefix(c, cookieName+"=")
-				break
-			}
-		}
-
-		if userID, err = p.Session.ParseCookie(token); err != nil {
-			p.Sugar.Error("missing cookie")
-			return nil, status.Error(codes.Unauthenticated, "missing cookie")
-		}
-	}
 
 	values := make([]interface{}, 0, len(in.Items))
 	result := make([]*pb.ShortenBatchResult, 0, len(in.Items))
@@ -262,34 +180,8 @@ func (p *HandlerProvider) ShortenBatchHandler(ctx context.Context, in *pb.Shorte
 
 // UserUrlsHandler - handler for get user short urls
 func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) (*pb.UserUrlsResponse, error) {
-	var userID int64
+	userID := ctx.Value("userID").(int64)
 	var err error
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		p.Sugar.Error("no metadata in context")
-		return nil, status.Error(codes.Unauthenticated, "missing metadata")
-	}
-
-	cookieHeaders := md.Get("cookie")
-	if len(cookieHeaders) == 0 {
-		p.Sugar.Error("no cookie header")
-		return nil, status.Error(codes.Unauthenticated, "missing cookie")
-	}
-
-	var token string
-	cookies := strings.Split(cookieHeaders[0], "; ")
-	for _, c := range cookies {
-		if strings.HasPrefix(c, cookieName+"=") {
-			token = strings.TrimPrefix(c, cookieName+"=")
-			break
-		}
-	}
-
-	if userID, err = p.Session.ParseCookie(token); err != nil {
-		p.Sugar.Error("missing cookie")
-		return nil, status.Error(codes.Unauthenticated, "missing cookie")
-	}
 
 	rcs, err := p.Storage.GetAll(shortenerTable, userID)
 	if err != nil {
@@ -304,7 +196,7 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 
 	records := make([]*pb.UserUrlsResult, 0, len(rcs))
 	for _, rc := range rcs {
-		value, ok := rc.(pb.UserUrlsResult)
+		value, ok := rc.(*pb.UserUrlsResult)
 		if !ok {
 			p.Sugar.Error("invalid shorten record")
 			return nil, status.Error(codes.Internal, "invalid shorten record")
@@ -320,34 +212,7 @@ func (p HandlerProvider) UserUrlsHandler(ctx context.Context, _ *emptypb.Empty) 
 
 // UserUrlsDeleteHandler - handler for remove user short urls
 func (p HandlerProvider) UserUrlsDeleteHandler(ctx context.Context, in *pb.UserUrlsDeleteRequest) (*pb.UserUrlsDeleteResponse, error) {
-	var userID int64
-	var err error
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		p.Sugar.Error("no metadata in context")
-		return nil, status.Error(codes.Unauthenticated, "missing metadata")
-	}
-
-	cookieHeaders := md.Get("cookie")
-	if len(cookieHeaders) == 0 {
-		p.Sugar.Error("no cookie header")
-		return nil, status.Error(codes.Unauthenticated, "missing cookie")
-	}
-
-	var token string
-	cookies := strings.Split(cookieHeaders[0], "; ")
-	for _, c := range cookies {
-		if strings.HasPrefix(c, cookieName+"=") {
-			token = strings.TrimPrefix(c, cookieName+"=")
-			break
-		}
-	}
-
-	if userID, err = p.Session.ParseCookie(token); err != nil {
-		p.Sugar.Error("missing cookie")
-		return nil, status.Error(codes.Unauthenticated, "missing cookie")
-	}
+	userID := ctx.Value("userID").(int64)
 
 	generate := func(userID int64, key string) chan interface{} {
 		out := make(chan interface{}, 1)
