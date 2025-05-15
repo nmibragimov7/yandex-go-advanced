@@ -54,6 +54,7 @@ func (p *RouterProvider) Router() *gin.Engine {
 	r.DELETE("/api/user/urls", p.Handler.UserUrlsDeleteHandler)
 	r.GET("/ping", p.Handler.PingHandler)
 	r.GET("/:id", p.Handler.IDPage)
+	r.GET("/api/internal/stats", p.Handler.TrustedSubnetHandler)
 
 	return r
 }

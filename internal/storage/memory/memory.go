@@ -95,6 +95,12 @@ func (s *Storage) Ping(_ context.Context) error { return nil }
 // AddToChannel - func for add value in channel
 func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
+// GetStat - func for return stats
+func (s *Storage) GetStat() (interface{}, error) {
+	var record models.StatResponse
+	return &record, nil
+}
+
 // Init - initialize memory instance
 func Init() *Storage {
 	return &Storage{

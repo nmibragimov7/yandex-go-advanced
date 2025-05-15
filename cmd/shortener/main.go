@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"time"
+
 	"yandex-go-advanced/internal/config"
 	"yandex-go-advanced/internal/handlers"
 	"yandex-go-advanced/internal/logger"
@@ -49,7 +49,7 @@ func run() error {
 	if err != nil {
 		sgr.Errorw(
 			"failed to init storage",
-			"error", err.Error(),
+			logKeyError, err.Error(),
 		)
 
 		return fmt.Errorf("failed to init storage: %w", err)
@@ -92,9 +92,6 @@ func run() error {
 		Handler: rtr,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	if cnf.HTTPS != nil && *cnf.HTTPS {
 		certFile := "./cert.pem"
 		keyFile := "./key.pem"
@@ -121,7 +118,7 @@ func run() error {
 		return errors.New("failed to start server in HTTP")
 	}
 
-	shutdown.Shutdown(ctx, server, TimeForShutdown*time.Second)
+	shutdown.Shutdown(server, TimeForShutdown*time.Second)
 
 	return nil
 }

@@ -29,6 +29,7 @@ func (p *MockStorageSuccess) SetAll(_ string, _ []interface{}) error            
 func (p *MockStorageSuccess) AddToChannel(_ string, _ chan struct{}, _ ...chan interface{}) {}
 func (p *MockStorageSuccess) Close() error                                                  { return nil }
 func (p *MockStorageSuccess) Ping(_ context.Context) error                                  { return nil }
+func (p *MockStorageSuccess) GetStat(_ string) (interface{}, error)                         { return nil, nil }
 
 func (p *MockStorageError) Get(_ string, _ string) (interface{}, error)           { return nil, nil }
 func (p *MockStorageError) GetAll(_ string, _ interface{}) ([]interface{}, error) { return nil, nil }
@@ -39,6 +40,7 @@ func (p *MockStorageError) SetAll(_ string, _ []interface{}) error              
 func (p *MockStorageError) AddToChannel(_ string, _ chan struct{}, _ ...chan interface{}) {}
 func (p *MockStorageError) Close() error                                                  { return nil }
 func (p *MockStorageError) Ping(_ context.Context) error                                  { return nil }
+func (p *MockStorageError) GetStat(_ string) (interface{}, error)                         { return nil, nil }
 
 type MockSession struct {
 	*config.Config

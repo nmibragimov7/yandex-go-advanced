@@ -1,10 +1,9 @@
-package users
+package statistics
 
 import (
 	"context"
 	"errors"
 	"fmt"
-
 	"yandex-go-advanced/internal/models"
 
 	"github.com/jmoiron/sqlx"
@@ -17,8 +16,7 @@ type Storage struct {
 
 // Get - func for return record
 func (s *Storage) Get(_ string) (interface{}, error) {
-	var record models.UserRecord
-	return &record, nil
+	return nil, nil
 }
 
 // GetAll - func for return records
@@ -70,5 +68,13 @@ func (s *Storage) AddToChannel(_ chan struct{}, _ ...chan interface{}) {}
 
 // GetStat - func for return stats
 func (s *Storage) GetStat() (interface{}, error) {
-	return nil, nil
+	var record models.StatResponse
+
+	query := "SELECT (SELECT COUNT(*) FROM shortener), (SELECT COUNT(*) FROM users)"
+	err := s.DB.QueryRow(query).Scan(&record.Urls, &record.Users)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query stats: %w", err)
+	}
+
+	return &record, nil
 }

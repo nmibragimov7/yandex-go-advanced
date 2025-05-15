@@ -22,6 +22,7 @@ type Repository interface {
 	AddToChannel(done chan struct{}, channels ...chan interface{})
 	Close() error
 	Ping(ctx context.Context) error
+	GetStat() (interface{}, error)
 }
 
 // Init - initialize database instance
